@@ -1,0 +1,92 @@
+.layout {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-md);
+}
+
+@media (max-width: 767px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dl {
+  margin: 0;
+  display: grid;
+  gap: var(--spacing-sm);
+}
+
+.dt {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.verifyPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  color: #fff;
+}
+
+.pillOk {
+  background: var(--color-status-verified);
+}
+
+.pillBad {
+  background: var(--color-status-denied);
+}
+
+.pillWait {
+  background: var(--color-status-pending);
+  color: #333;
+}
+
+.topRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.back {
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0;
+}
+
+.back:hover {
+  text-decoration: underline;
+}

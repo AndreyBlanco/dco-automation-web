@@ -1,0 +1,35 @@
+.stack {
+  display: grid;
+  gap: var(--spacing-md);
+  max-width: 720px;
+}
+
+.muted {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  margin: 0;
+}
+
+.kv {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.kv > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  border-bottom: 1px dashed rgba(0, 0, 0, 0.1);
+  padding-bottom: 8px;
+}
+
+.k {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  font-size: var(--font-size-small);
+}
+
+.v {
+  font-weight: 600;
+}

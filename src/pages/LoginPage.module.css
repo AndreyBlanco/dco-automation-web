@@ -1,0 +1,53 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  background: linear-gradient(160deg, var(--color-secondary) 0%, var(--color-page-bg) 45%);
+}
+
+.card {
+  width: min(400px, 100%);
+  background: #fff;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-xl);
+  text-align: left;
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.title {
+  margin-bottom: var(--spacing-xs);
+}
+
+.brandSubtitle {
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  margin-bottom: var(--spacing-lg);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.hint {
+  margin-top: var(--spacing-md);
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}

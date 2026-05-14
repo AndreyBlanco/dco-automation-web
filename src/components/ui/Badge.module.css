@@ -1,0 +1,24 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  padding: 2px var(--spacing-sm);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.verified {
+  background-color: var(--color-status-verified);
+}
+
+.denied {
+  background-color: var(--color-status-denied);
+}
+
+.pending {
+  background-color: var(--color-status-pending);
+  color: #333;
+}
