@@ -30,11 +30,10 @@ export function LoginPage() {
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.logoRow}>
-          <LogoMark size={48} />
-          <div>
-            <h1 className={styles.title}>DCO Automation</h1>
-            <div className={styles.brandSubtitle}>Dental Care Office</div>
-          </div>
+          <LogoMark size={300} />
+        </div>
+        <div>
+          <h1 className={styles.title}>DCO Automation</h1>
         </div>
         <p className={styles.subtitle}>
           Sign in to open the administrative dashboard (demo — any password works).

@@ -13,11 +13,7 @@ export function Sidebar() {
   return (
     <div className={styles.root}>
       <div className={styles.sidebarBrand}>
-        <LogoMark size={44} />
-        <div className={styles.brandText}>
-          <div className={styles.brandTitle}>DCO</div>
-          <div className={styles.brandSubtitle}>Dental Care Office</div>
-        </div>
+        <LogoMark size={200} />
       </div>
 
       <div className={styles.actions}>
