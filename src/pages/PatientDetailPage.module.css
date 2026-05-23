@@ -90,3 +90,52 @@
 .back:hover {
   text-decoration: underline;
 }
+
+.stepLog {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: var(--spacing-md);
+}
+
+.stepItem {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--color-neutral);
+  font-size: var(--font-size-small);
+}
+
+.stepName {
+  font-weight: 700;
+  text-transform: capitalize;
+  color: var(--color-primary);
+}
+
+.stepMessage {
+  color: var(--color-text-muted);
+}
+
+.step_ok,
+.step_skipped {
+  border-left: 3px solid var(--color-status-verified);
+}
+
+.step_running {
+  border-left: 3px solid var(--color-status-pending);
+}
+
+.step_error {
+  border-left: 3px solid var(--color-status-denied);
+}
+
+.jobMeta {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}

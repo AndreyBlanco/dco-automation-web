@@ -11,16 +11,17 @@ import {
 } from 'recharts'
 import { Card } from '../components/ui/Card'
 import { mockAppointments } from '../data/mockAppointments'
-import { mockPatients } from '../data/mockPatients'
 import { weeklyAppointmentCounts } from '../data/weeklyChart'
+import { usePatients } from '../context/PatientsContext'
 import { useToast } from '../context/ToastContext'
 import styles from './DashboardPage.module.css'
 
 export function DashboardPage() {
   const { pushToast } = useToast()
+  const { patients, stats } = usePatients()
   const [exportChoice, setExportChoice] = useState('')
 
-  const pendingVerifications = 8
+  const pendingVerifications = stats.pending
   const upcomingAppointments = 15
   const reportsThisWeek = 3
 
@@ -125,7 +126,7 @@ export function DashboardPage() {
             </thead>
             <tbody>
               {recent.map((a) => {
-                const patient = mockPatients.find((p) => p.id === a.patientId)
+                const patient = patients.find((p) => p.id === a.patientId)
                 const ok = patient?.insuranceStatus === 'verified'
                 const initials = a.patientName
                   .split(' ')
