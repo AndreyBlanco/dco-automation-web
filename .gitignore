@@ -11,6 +11,15 @@ node_modules
 dist
 dist-ssr
 *.local
+.env
+.env.local
+
+# Python API
+api/.venv
+api/__pycache__
+api/**/__pycache__
+api/*.pyc
+api/data/plan_catalog.xlsx
 
 # Editor directories and files
 .vscode/*
