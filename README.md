@@ -1,3 +1,5 @@
+"I have no special talent, I am only passionately curious". Albert Einstein
+
 # DCO Automation System — Web UI (demo)
 
 Single-page application built with **React + TypeScript + Vite**. This repository contains a **non-sensitive** frontend template aligned with the DCO Automation System proposal: dashboard, patients, appointment form, reports placeholders, and a simulated insurance verification flow.
