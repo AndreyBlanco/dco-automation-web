@@ -3,8 +3,9 @@ import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { TextAreaField, TextField } from '../components/ui/Field'
 import { mockAppointments } from '../data/mockAppointments'
-import { mockPatients } from '../data/mockPatients'
+import { usePatients } from '../context/PatientsContext'
 import { useToast } from '../context/ToastContext'
+import { patientFullName } from '../utils/patient'
 import type { Appointment } from '../types/models'
 import styles from './AppointmentsPage.module.css'
 
@@ -12,19 +13,20 @@ let idCounter = 100
 
 export function AppointmentsPage() {
   const { pushToast } = useToast()
+  const { patients } = usePatients()
   const [rows, setRows] = useState<Appointment[]>(() => [...mockAppointments])
 
   const [date, setDate] = useState('2026-05-20')
   const [time, setTime] = useState('10:00')
-  const [patientId, setPatientId] = useState(mockPatients[0]?.id ?? 'p1')
+  const [patientId, setPatientId] = useState(patients[0]?.id ?? '')
   const [procedure, setProcedure] = useState('Prophylaxis (D1110)')
   const [notes, setNotes] = useState('')
 
   const patientNameById = useMemo(() => {
     const m = new Map<string, string>()
-    mockPatients.forEach((p) => m.set(p.id, `${p.firstName} ${p.lastName}`))
+    patients.forEach((p) => m.set(p.id, patientFullName(p)))
     return m
-  }, [])
+  }, [patients])
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -49,7 +51,7 @@ export function AppointmentsPage() {
   function handleCancel() {
     setDate('2026-05-20')
     setTime('10:00')
-    setPatientId(mockPatients[0]?.id ?? 'p1')
+    setPatientId(patients[0]?.id ?? '')
     setProcedure('Prophylaxis (D1110)')
     setNotes('')
   }
@@ -89,9 +91,9 @@ export function AppointmentsPage() {
                     fontFamily: 'inherit',
                   }}
                 >
-                  {mockPatients.map((p) => (
+                  {patients.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.firstName} {p.lastName}
+                      {patientFullName(p)}
                     </option>
                   ))}
                 </select>

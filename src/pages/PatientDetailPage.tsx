@@ -1,53 +1,70 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { TextAreaField } from '../components/ui/Field'
 import { InsuranceBadge } from '../components/ui/InsuranceBadge'
-import { mockPatients } from '../data/mockPatients'
+import { usePatients } from '../context/PatientsContext'
 import { useToast } from '../context/ToastContext'
+import { useInsuranceVerification } from '../hooks/useInsuranceVerification'
 import type { VerificationUiState } from '../types/models'
+import { patientFullName } from '../utils/patient'
 import styles from './PatientDetailPage.module.css'
+
+function sessionUiState(
+  isRunning: boolean,
+  lastStatus: 'verified' | 'denied' | undefined,
+): VerificationUiState {
+  if (isRunning) return 'verifying'
+  if (lastStatus === 'verified') return 'verified'
+  if (lastStatus === 'denied') return 'denied'
+  return 'idle'
+}
 
 export function PatientDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { pushToast } = useToast()
+  const { getPatient, applyVerificationResult, refreshPlanCatalogFlags, updateNotes } =
+    usePatients()
+  const { verifyPatient, isRunning, steps, lastResult, reset } = useInsuranceVerification()
 
-  const patient = useMemo(() => mockPatients.find((p) => p.id === id), [id])
-
-  const [verifyState, setVerifyState] = useState<VerificationUiState>('idle')
-  const timerRef = useRef<number | null>(null)
-  const [notes, setNotes] = useState('')
+  const patient = id ? getPatient(id) : undefined
+  const [notes, setNotes] = useState(patient?.notes ?? '')
 
   useEffect(() => {
-    return () => {
-      if (timerRef.current) window.clearTimeout(timerRef.current)
-    }
-  }, [])
+    setNotes(patient?.notes ?? '')
+    reset()
+  }, [patient?.id, patient?.notes, reset])
 
   if (!patient) {
     return (
       <div>
         <p>Patient not found.</p>
-        <Link to="/patients">Back to patients</Link>
+        <Link to="/patients">Back to insurance verification</Link>
       </div>
     )
   }
 
-  function runVerification() {
-    if (verifyState === 'verifying') return
-    setVerifyState('verifying')
-    if (timerRef.current) window.clearTimeout(timerRef.current)
-    timerRef.current = window.setTimeout(() => {
-      const ok = Math.random() < 0.78
-      setVerifyState(ok ? 'verified' : 'denied')
-      pushToast(
-        ok ? 'Verification completed (demo).' : 'Verification returned denied (demo).',
-        ok ? 'success' : 'error',
-      )
-    }, 1800)
+  const activePatient = patient
+
+  async function runVerification() {
+    if (isRunning) return
+    const outcome = await verifyPatient(activePatient)
+    if ('error' in outcome) {
+      pushToast(outcome.error, 'error')
+      return
+    }
+    const { result } = outcome
+    applyVerificationResult(activePatient.id, result)
+    if (result.catalogRowAdded) refreshPlanCatalogFlags()
+    pushToast(result.message, result.status === 'completed' ? 'success' : 'error')
   }
+
+  const verifyState = sessionUiState(
+    isRunning,
+    lastResult?.insuranceStatus === 'pending' ? undefined : lastResult?.insuranceStatus,
+  )
 
   const statusLabel =
     verifyState === 'idle'
@@ -58,18 +75,18 @@ export function PatientDetailPage() {
           ? 'Verified'
           : 'Denied'
 
+  const usingApi = Boolean(import.meta.env.VITE_VERIFICATION_API_URL?.trim())
+
   return (
     <div className={styles.layout}>
       <div className={styles.topRow}>
         <div>
-          <button type="button" className={styles.back} onClick={() => navigate(-1)}>
-            ← Back
+          <button type="button" className={styles.back} onClick={() => navigate('/patients')}>
+            ← Back to records
           </button>
-          <h2 style={{ margin: '8px 0 0' }}>
-            {patient.firstName} {patient.lastName}
-          </h2>
+          <h2 style={{ margin: '8px 0 0' }}>{patientFullName(patient)}</h2>
           <p style={{ margin: '4px 0 0', color: 'var(--color-text-muted)', fontSize: 'var(--font-size-small)' }}>
-            Member ID {patient.memberId}
+            Group {patient.groupNumber} · Member {patient.memberId}
           </p>
         </div>
         <InsuranceBadge status={patient.insuranceStatus} />
@@ -94,8 +111,18 @@ export function PatientDetailPage() {
           <h3 style={{ marginTop: 0 }}>Insurance info</h3>
           <dl className={styles.dl}>
             <div>
+              <dt className={styles.dt}>Carrier</dt>
+              <dd className={styles.dd}>{patient.insuranceCarrier}</dd>
+            </div>
+            <div>
               <dt className={styles.dt}>Plan</dt>
               <dd className={styles.dd}>{patient.insurancePlan}</dd>
+            </div>
+            <div>
+              <dt className={styles.dt}>Excel catalog</dt>
+              <dd className={styles.dd}>
+                {patient.planInExcelCatalog ? 'Known plan type' : 'Not in catalog yet'}
+              </dd>
             </div>
             <div>
               <dt className={styles.dt}>On-file status</dt>
@@ -108,20 +135,30 @@ export function PatientDetailPage() {
       </div>
 
       <Card noHover>
-        <h3 style={{ marginTop: 0 }}>Verify insurance</h3>
+        <h3 style={{ marginTop: 0 }}>Run verification (robot)</h3>
         <div className={styles.verifyPanel}>
           <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 'var(--font-size-small)' }}>
-            Demo action: simulates a portal check. Wire <code>InsuranceVerificationService</code> to Python +
-            Playwright when available.
+            {usingApi ? (
+              <>
+                Backend: <code>{import.meta.env.VITE_VERIFICATION_API_URL}</code> — Excel lookup,
+                portal scrape, and catalog write via API.
+              </>
+            ) : (
+              <>
+                Stub <code>InsuranceVerificationService</code>: Excel lookup → Playwright portal →
+                Excel write. Set <code>VITE_VERIFICATION_API_URL</code> when the Python service is
+                ready.
+              </>
+            )}
           </p>
           <Button
             variant="primary"
             size="lg"
-            onClick={runVerification}
-            disabled={verifyState === 'verifying'}
+            onClick={() => void runVerification()}
+            disabled={isRunning}
             style={{ alignSelf: 'flex-start' }}
           >
-            {verifyState === 'verifying' ? 'Verifying…' : 'Verify insurance'}
+            {isRunning ? 'Verifying…' : 'Verify insurance'}
           </Button>
           <div className={styles.statusRow}>
             <span className={styles.dt}>Session result:</span>
@@ -131,14 +168,31 @@ export function PatientDetailPage() {
                   ? styles.pillOk
                   : verifyState === 'denied'
                     ? styles.pillBad
-                    : verifyState === 'verifying'
-                      ? styles.pillWait
-                      : styles.pillWait
+                    : styles.pillWait
               }`}
             >
               {statusLabel}
             </span>
           </div>
+          {steps.length > 0 && (
+            <ol className={styles.stepLog}>
+              {steps.map((step, index) => (
+                <li
+                  key={`${step.step}-${index}`}
+                  className={`${styles.stepItem} ${styles[`step_${step.status}`] ?? ''}`}
+                >
+                  <span className={styles.stepName}>{step.step.replace(/_/g, ' ')}</span>
+                  <span className={styles.stepMessage}>{step.message}</span>
+                </li>
+              ))}
+            </ol>
+          )}
+          {lastResult?.jobId && (
+            <p className={styles.jobMeta}>
+              Job <code>{lastResult.jobId}</code>
+              {lastResult.catalogRowAdded ? ' · catalog row added' : ''}
+            </p>
+          )}
         </div>
       </Card>
 
@@ -153,7 +207,10 @@ export function PatientDetailPage() {
         />
         <Button
           variant="secondary"
-          onClick={() => pushToast('Notes saved locally (demo).', 'success')}
+          onClick={() => {
+            updateNotes(patient.id, notes)
+            pushToast('Notes saved.', 'success')
+          }}
         >
           Save notes
         </Button>
