@@ -34,18 +34,40 @@ npm run preview
 
 Set `base` in `vite.config.ts` to your repo name (e.g. `base: '/dco-automation-web/'`), then use a Pages action or `gh-pages` branch. For a root domain site, keep `base: '/'`.
 
-## Project structure (high level)
+## Project structure (monorepo)
 
-- `src/components` — layout shell, UI primitives (buttons, cards, fields).
-- `src/pages` — routed screens.
-- `src/data` — mock fixtures for demos.
-- `src/context` — lightweight demo auth + toasts.
+| Path | Stack | Role |
+|------|--------|------|
+| `src/` | React + Vite | Web UI — patients, verification, dashboard |
+| `api/` | Python + FastAPI | Robot service — Excel catalog, portal stub, audit log |
 
-## Next steps (with team lead)
+## Full stack (local)
 
-- Replace mock data with API calls to the Python service layer.
-- Add real authentication and role-based views.
-- Connect “Verify insurance” and exports to backend jobs (Playwright / Pandas / OpenPyXL).
+**Terminal 1 — API**
+
+```bash
+cd api
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+**Terminal 2 — Web**
+
+```bash
+cp .env.example .env.local   # sets VITE_VERIFICATION_API_URL=http://localhost:8000
+npm install
+npm run dev
+```
+
+See `api/README.md` for endpoints and Excel layout.
+
+## Next steps (CSE499)
+
+- Laura review on branch `python-service` before merge to `main`.
+- Wire Playwright in `api/app/portal_scraper.py` (`USE_PLAYWRIGHT=true`).
+- Deploy API (Render/Railway) and set `VITE_VERIFICATION_API_URL` in production.
 
 ## License
 
