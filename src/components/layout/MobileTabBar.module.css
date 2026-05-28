@@ -23,6 +23,7 @@
   align-items: center;
   justify-content: center;
   gap: 2px;
+  min-width: 0;
   font-size: 0.65rem;
   font-weight: 600;
   color: var(--color-text-muted);

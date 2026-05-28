@@ -17,13 +17,15 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
 
   if (user) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/verification" replace />
   }
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault()
     login(username)
-    navigate(from && from !== '/login' ? from : '/', { replace: true })
+    const dest =
+      from && from !== '/login' && from !== '/' ? from : '/verification'
+    navigate(dest, { replace: true })
   }
 
   return (
@@ -36,7 +38,7 @@ export function LoginPage() {
           <h1 className={styles.title}>DCO Automation</h1>
         </div>
         <p className={styles.subtitle}>
-          Sign in to open the administrative dashboard (demo — any password works).
+          Sign in to open IVF Verification and Dentrix Sync (demo — any password works).
         </p>
         <form className={styles.form} onSubmit={handleSubmit}>
           <TextField
@@ -61,7 +63,8 @@ export function LoginPage() {
           </Button>
         </form>
         <p className={styles.hint}>
-          This build ships with mock patients and appointments for UI review only.
+          Sheet and sync data are mock until <code>VITE_API_URL</code> and the API flags in{' '}
+          <code>.env.example</code> are enabled.
         </p>
       </div>
     </div>
