@@ -1,8 +1,9 @@
-"""Run the Dentrix robot in-process (background thread) for the FastAPI app."""
+"""Run the Dentrix robot as a separate Python process for the FastAPI app."""
 
 from __future__ import annotations
 
-import threading
+import subprocess
+import sys
 from pathlib import Path
 from uuid import uuid4
 
@@ -11,69 +12,51 @@ from . import run_state
 from ..config import robot_runs_dir
 
 _active_run_id: str | None = None
-_worker: threading.Thread | None = None
+_process: subprocess.Popen | None = None
 
 
 def _state_path(run_id: str) -> Path:
     return robot_runs_dir() / f"{run_id}.json"
 
 
-def _is_worker_alive() -> bool:
-    return _worker is not None and _worker.is_alive()
+def _is_process_alive() -> bool:
+    return _process is not None and _process.poll() is None
 
 
 def _read_detail(run_id: str) -> DentrixSyncRunDetail:
+    global _active_run_id, _process
+
     path = _state_path(run_id)
     data = run_state.load(path)
-    if _active_run_id == run_id and not _is_worker_alive():
-        terminal = ("completed", "failed", "cancelled")
+
+    terminal = ("completed", "failed", "cancelled")
+
+    if _active_run_id == run_id and not _is_process_alive():
         if data.get("status") not in terminal:
             data["status"] = "failed"
-            data["message"] = "Robot thread stopped unexpectedly."
+            data["message"] = "Robot process stopped unexpectedly."
             data["completedAt"] = run_state._now_iso()
             run_state.append_log(data, "error", data["message"])
             run_state.save(path, data)
+
+        _active_run_id = None
+        _process = None
+
     return run_state.to_detail(data)
 
 
-def _worker_target(
-    path: Path,
-    start_date: str,
-    days: int,
-    patient_limit: int | None,
-    run_id: str,
-) -> None:
-    global _active_run_id, _worker
-    try:
-        from .dentrix_scraper import run_sync
-
-        run_sync(
-            start_date,
-            days,
-            status_path=str(path),
-            patient_limit=patient_limit,
-        )
-    except Exception as exc:
-        from .dentrix_scraper import mark_run_failed
-
-        mark_run_failed(path, exc)
-    finally:
-        if _active_run_id == run_id:
-            _active_run_id = None
-        _worker = None
-
-
 def start_run(body: DentrixSyncRunRequest) -> DentrixSyncRunSummary:
-    global _active_run_id, _worker
+    global _active_run_id, _process
 
-    if _is_worker_alive():
+    if _is_process_alive():
         raise RuntimeError(
             f"A robot run is already active ({_active_run_id}). Wait for it to finish."
         )
 
     run_id = f"run-{uuid4().hex[:12]}"
     path = _state_path(run_id)
-    run_state.init_run(
+
+    data = run_state.init_run(
         path,
         run_id=run_id,
         start_date=body.start_date,
@@ -81,27 +64,40 @@ def start_run(body: DentrixSyncRunRequest) -> DentrixSyncRunSummary:
         patient_limit=body.patient_limit,
     )
 
-    data = run_state.load(path)
-    data["message"] = "Starting Dentrix robot (in-process)…"
+    run_state.append_log(data, "info", "Starting Dentrix robot process.")
+    data["message"] = "Starting Dentrix robot process…"
     run_state.save(path, data)
 
-    _active_run_id = run_id
-    _worker = threading.Thread(
-        target=_worker_target,
-        args=(path, body.start_date, body.days, body.patient_limit, run_id),
-        name=f"dentrix-{run_id}",
-        daemon=True,
+    cmd = [
+        sys.executable,
+        "-m",
+        "app.robots.cli",
+        "--start-date",
+        body.start_date,
+        "--days",
+        str(body.days),
+        "--status-file",
+        str(path),
+    ]
+
+    if body.patient_limit is not None:
+        cmd.extend(["--patient-limit", str(body.patient_limit)])
+
+    _process = subprocess.Popen(
+        cmd,
+        cwd=Path(__file__).resolve().parents[2],
     )
-    _worker.start()
+
+    _active_run_id = run_id
 
     data = run_state.load(path)
+    data["status"] = "starting"
+    data["message"] = "Robot process started. Chromium should open soon."
     run_state.append_log(
         data,
         "info",
-        "Chromium will open on this machine. Log in to Dentrix, position the calendar, then confirm in the app.",
+        "Robot process started. Wait for Chromium/Dentrix to open.",
     )
-    data["status"] = "awaiting_login"
-    data["message"] = "Waiting for operator to confirm Dentrix is ready."
     run_state.save(path, data)
 
     return run_state.to_summary(data)
@@ -110,12 +106,17 @@ def start_run(body: DentrixSyncRunRequest) -> DentrixSyncRunSummary:
 def resume_run(run_id: str) -> DentrixSyncRunDetail:
     path = _state_path(run_id)
     data = run_state.load(path)
-    if data.get("status") != "awaiting_login":
-        raise ValueError(f"Run {run_id} is not awaiting login (status={data.get('status')}).")
+
+    if data.get("status") not in ("awaiting_login", "starting"):
+        raise ValueError(
+            f"Run {run_id} is not awaiting login (status={data.get('status')})."
+        )
+
     data["resume_requested"] = True
     data["message"] = "Resume acknowledged — robot will start processing."
     run_state.append_log(data, "info", "Operator confirmed Dentrix is ready.")
     run_state.save(path, data)
+
     return run_state.to_detail(data)
 
 
