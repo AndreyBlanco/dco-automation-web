@@ -64,9 +64,12 @@ def start_run(body: DentrixSyncRunRequest) -> DentrixSyncRunSummary:
         patient_limit=body.patient_limit,
     )
 
+    data["status"] = "pending"
+    data["message"] = "Starting Dentrix robot process..."
     run_state.append_log(data, "info", "Starting Dentrix robot process.")
-    data["message"] = "Starting Dentrix robot process…"
     run_state.save(path, data)
+
+    api_dir = Path(__file__).resolve().parents[2]
 
     cmd = [
         sys.executable,
@@ -85,13 +88,14 @@ def start_run(body: DentrixSyncRunRequest) -> DentrixSyncRunSummary:
 
     _process = subprocess.Popen(
         cmd,
-        cwd=Path(__file__).resolve().parents[2],
+        cwd=str(api_dir),
+        creationflags=subprocess.CREATE_NEW_CONSOLE if sys.platform == "win32" else 0,
     )
 
     _active_run_id = run_id
 
     data = run_state.load(path)
-    data["status"] = "starting"
+    data["status"] = "pending"
     data["message"] = "Robot process started. Chromium should open soon."
     run_state.append_log(
         data,
@@ -107,7 +111,7 @@ def resume_run(run_id: str) -> DentrixSyncRunDetail:
     path = _state_path(run_id)
     data = run_state.load(path)
 
-    if data.get("status") not in ("awaiting_login", "starting"):
+    if data.get("status") not in ("awaiting_login", "pending"):
         raise ValueError(
             f"Run {run_id} is not awaiting login (status={data.get('status')})."
         )
