@@ -4,7 +4,27 @@ import { LogoMark } from '../components/brand/LogoMark'
 import { Button } from '../components/ui/Button'
 import { TextField } from '../components/ui/Field'
 import { useAuth } from '../context/AuthContext'
+import { authDataSourceLabel } from '../services/auth/createAuthService'
 import styles from './LoginPage.module.css'
+
+type FieldErrors = {
+  username?: string
+  password?: string
+}
+
+function validateFields(username: string, password: string): FieldErrors {
+  const errors: FieldErrors = {}
+  const trimmed = username.trim()
+  if (!trimmed) {
+    errors.username = 'Username is required.'
+  } else if (trimmed.length < 2) {
+    errors.username = 'Username must be at least 2 characters.'
+  }
+  if (!password) {
+    errors.password = 'Password is required.'
+  }
+  return errors
+}
 
 export function LoginPage() {
   const { user, login } = useAuth()
@@ -15,15 +35,42 @@ export function LoginPage() {
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
+  const [formError, setFormError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  const authSource = authDataSourceLabel()
 
   if (user) {
-    return <Navigate to="/" replace />
+    return <Navigate to="/verification" replace />
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault()
-    login(username)
-    navigate(from && from !== '/login' ? from : '/', { replace: true })
+    const errors = validateFields(username, password)
+    setFieldErrors(errors)
+    setFormError(null)
+
+    if (errors.username || errors.password) {
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      await login({ username: username.trim(), password })
+      const dest =
+        from && from !== '/login' && from !== '/' ? from : '/verification'
+      navigate(dest, { replace: true })
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Could not sign in.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  function clearFieldError(field: keyof FieldErrors) {
+    setFieldErrors((prev) => ({ ...prev, [field]: undefined }))
+    setFormError(null)
   }
 
   return (
@@ -36,16 +83,29 @@ export function LoginPage() {
           <h1 className={styles.title}>DCO Automation</h1>
         </div>
         <p className={styles.subtitle}>
-          Sign in to open the administrative dashboard (demo — any password works).
+          Sign in to open IVF Verification and Dentrix Sync.
         </p>
-        <form className={styles.form} onSubmit={handleSubmit}>
+
+        <p className={styles.sourceBadge} role="status">
+          Auth: <strong>{authSource}</strong>
+          {authSource === 'mock' && (
+            <> — demo accounts below until the API login is enabled.</>
+          )}
+        </p>
+
+        <form className={styles.form} onSubmit={(e) => void handleSubmit(e)} noValidate>
           <TextField
             id="username"
             label="Username"
             autoComplete="username"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="e.g. frontdesk1"
+            onChange={(e) => {
+              setUsername(e.target.value)
+              clearFieldError('username')
+            }}
+            placeholder="admin or operator"
+            disabled={submitting}
+            error={fieldErrors.username}
           />
           <TextField
             id="password"
@@ -53,15 +113,48 @@ export function LoginPage() {
             type="password"
             autoComplete="current-password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              clearFieldError('password')
+            }}
             placeholder="••••••••"
+            disabled={submitting}
+            error={fieldErrors.password}
           />
-          <Button type="submit" variant="primary" size="lg" fullWidth>
-            Login
+
+          {formError && (
+            <p className={styles.formError} role="alert">
+              {formError}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            variant="primary"
+            size="lg"
+            fullWidth
+            disabled={submitting}
+          >
+            {submitting ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
+
+        <div className={styles.demoBox}>
+          <p className={styles.demoTitle}>Demo accounts (mock auth)</p>
+          <ul className={styles.demoList}>
+            <li>
+              <code>admin</code> / <code>admin</code> — full access (sync + edit)
+            </li>
+            <li>
+              <code>operator</code> / <code>operator</code> — dashboard edit only (D3 UI)
+            </li>
+          </ul>
+        </div>
+
         <p className={styles.hint}>
-          This build ships with mock patients and appointments for UI review only.
+          Sheet and sync use the API when <code>VITE_SHEET_USE_API</code> and{' '}
+          <code>VITE_DENTRIX_SYNC_USE_API</code> are set. Auth API:{' '}
+          <code>VITE_AUTH_USE_API=true</code> (Sprint 3).
         </p>
       </div>
     </div>

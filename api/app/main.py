@@ -1,25 +1,27 @@
-from contextlib import asynccontextmanager
-
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import cors_origins
-from .excel_catalog import ensure_workbook
-from .models import CatalogLookupResponse, VerifyInsuranceRequest, VerifyInsuranceResponse
-from .verification_service import catalog_lookup, verify_patient
-
-
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
-    ensure_workbook()
-    yield
-
+from .models import (
+    DentrixSyncRunDetail,
+    DentrixSyncRunRequest,
+    DentrixSyncRunSummary,
+    IvfStatus,
+    KindOfInsurance,
+    SheetRowPatch,
+    SheetRowPatchResponse,
+    SheetRowsResponse,
+)
+from . import sheet_gateway
+from . import robot_gateway
 
 app = FastAPI(
-    title="DCO Automation — Verification API",
-    description="Excel catalog lookup, portal verification (stub/Playwright), and catalog writes.",
-    version="0.1.0",
-    lifespan=lifespan,
+    title="DCO Automation — IVF API Gateway",
+    description=(
+        "Google Sheet gateway + Dentrix robot control for the IVF operational workflow. "
+        "Sheet + Dentrix robot integrated in this API process (see /health)."
+    ),
+    version="0.2.0",
 )
 
 app.add_middleware(
@@ -34,32 +36,86 @@ app.add_middleware(
 @app.get("/")
 def root() -> dict:
     return {
-        "service": "DCO Automation — Verification API",
+        "service": "DCO Automation — IVF API Gateway",
         "status": "running",
         "docs": "/docs",
         "health": "/health",
         "endpoints": {
-            "catalogLookup": "GET /api/verification/catalog/lookup?carrier=&plan=",
-            "verify": "POST /api/verification/verify",
+            "sheetRows": "GET /api/sheet/rows",
+            "sheetPatch": "PATCH /api/sheet/row",
+            "robotRun": "POST /api/robot/run",
+            "robotStatus": "GET /api/robot/runs/{runId}",
         },
-        "note": "This is the backend for the React app. Open the UI with npm run dev (usually http://localhost:5173).",
+        "note": "Legacy /api/verification/* removed. UI: npm run dev (http://localhost:5173).",
     }
 
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    path = ensure_workbook()
-    return {"status": "ok", "excel": str(path)}
+    return {
+        "status": "ok",
+        "sheet": sheet_gateway.store_mode(),
+        "robot": robot_gateway.store_mode(),
+    }
 
 
-@app.get("/api/verification/catalog/lookup", response_model=CatalogLookupResponse)
-def lookup_catalog(
-    carrier: str = Query(..., min_length=1),
-    plan: str = Query(..., min_length=1),
-) -> CatalogLookupResponse:
-    return catalog_lookup(carrier, plan)
+@app.get("/api/sheet/rows", response_model=SheetRowsResponse)
+def get_sheet_rows(
+    date: str | None = Query(default=None),
+    dateFrom: str | None = Query(default=None),
+    dateTo: str | None = Query(default=None),
+    ivfStatus: IvfStatus | None = Query(default=None),
+    kindOfInsurance: KindOfInsurance | None = Query(default=None),
+    q: str | None = Query(default=None),
+) -> SheetRowsResponse:
+    try:
+        return sheet_gateway.list_rows(
+            date=date,
+            date_from=dateFrom,
+            date_to=dateTo,
+            ivf_status=ivfStatus,
+            kind_of_insurance=kindOfInsurance,
+            q=q,
+        )
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Sheet read failed: {exc}") from exc
 
 
-@app.post("/api/verification/verify", response_model=VerifyInsuranceResponse)
-def verify_insurance(body: VerifyInsuranceRequest) -> VerifyInsuranceResponse:
-    return verify_patient(body)
+@app.patch("/api/sheet/row", response_model=SheetRowPatchResponse)
+def patch_sheet_row(body: SheetRowPatch) -> SheetRowPatchResponse:
+    try:
+        return sheet_gateway.patch_row(body)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.post("/api/robot/run", response_model=DentrixSyncRunSummary)
+def start_robot_run(body: DentrixSyncRunRequest) -> DentrixSyncRunSummary:
+    try:
+        return robot_gateway.start_run(body)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.post("/api/robot/runs/{run_id}/resume", response_model=DentrixSyncRunDetail)
+def resume_robot_run(run_id: str) -> DentrixSyncRunDetail:
+    try:
+        return robot_gateway.resume_run(run_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=f"Unknown run: {run_id}") from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/api/robot/runs/{run_id}", response_model=DentrixSyncRunDetail)
+def get_robot_run(run_id: str) -> DentrixSyncRunDetail:
+    try:
+        return robot_gateway.get_run(run_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=f"Unknown run: {run_id}") from exc

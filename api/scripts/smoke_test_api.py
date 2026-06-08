@@ -1,4 +1,4 @@
-"""Smoke tests for verification API — run with server on port 8000."""
+"""Smoke tests for IVF API gateway — run with server on port 8000."""
 import json
 import sys
 import urllib.error
@@ -25,62 +25,60 @@ def post(path: str, body: dict) -> dict:
         return json.loads(r.read().decode())
 
 
+def patch(path: str, body: dict) -> dict:
+    data = json.dumps(body).encode()
+    req = urllib.request.Request(
+        f"{BASE}{path}",
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="PATCH",
+    )
+    with urllib.request.urlopen(req) as r:
+        return json.loads(r.read().decode())
+
+
 def main() -> int:
     print("=== 1. GET /health ===")
     health = get("/health")
     print(json.dumps(health, indent=2))
     assert health.get("status") == "ok", health
+    assert health.get("sheet") in ("google", "stub"), health
+    print(f"Sheet backend: {health.get('sheet')}")
 
-    print("\n=== 2. GET catalog lookup (Aetna — in seed) ===")
-    q = urllib.parse.urlencode({"carrier": "Aetna", "plan": "Aetna Dental PPO"})
-    lookup_hit = get(f"/api/verification/catalog/lookup?{q}")
-    print(json.dumps(lookup_hit, indent=2))
-    assert lookup_hit.get("found") is True, lookup_hit
-    assert lookup_hit.get("planName") == "Aetna Dental PPO", lookup_hit
+    print("\n=== 2. GET /api/sheet/rows (date filter) ===")
+    q = urllib.parse.urlencode({"date": "2026-05-27"})
+    sheet = get(f"/api/sheet/rows?{q}")
+    print(json.dumps(sheet, indent=2))
+    rows = sheet.get("rows", [])
+    assert len(rows) >= 2, sheet
+    assert all(r.get("date") == "2026-05-27" for r in rows), sheet
 
-    print("\n=== 3. GET catalog lookup (Cigna — may exist after prior run) ===")
-    q2 = urllib.parse.urlencode({"carrier": "Cigna", "plan": "Cigna Dental"})
-    lookup_cigna = get(f"/api/verification/catalog/lookup?{q2}")
-    print(json.dumps(lookup_cigna, indent=2))
-
-    print("\n=== 4. POST verify (John Smith / Cigna — portal path) ===")
-    verify = post(
-        "/api/verification/verify",
-        {
-            "patientId": "p-laura-2",
-            "firstName": "John",
-            "lastName": "Smith",
-            "dob": "1972-09-03",
-            "insuranceCarrier": "Cigna",
-            "insurancePlan": "Cigna Dental",
-            "groupNumber": "CGN-3318",
-            "memberId": "CGN-3318",
-        },
+    print("\n=== 3. PATCH /api/sheet/row ===")
+    patched = patch(
+        "/api/sheet/row",
+        {"rowIndex": 13, "ivfStatus": "DONE B"},
     )
-    print(json.dumps(verify, indent=2))
-    assert "jobId" in verify, verify
-    assert verify.get("insuranceStatus") in ("verified", "denied"), verify
-    assert len(verify.get("steps", [])) >= 3, verify
+    print(json.dumps(patched, indent=2))
+    assert patched.get("ok") is True, patched
+    assert patched["row"]["ivfStatus"] == "DONE B", patched
 
-    print("\n=== 5. POST verify (Maria Lopez / Aetna — excel path) ===")
-    verify2 = post(
-        "/api/verification/verify",
-        {
-            "patientId": "p-laura-1",
-            "firstName": "Maria",
-            "lastName": "Lopez",
-            "dob": "1985-04-12",
-            "insuranceCarrier": "Aetna",
-            "insurancePlan": "Aetna Dental PPO",
-            "groupNumber": "AET-2049",
-            "memberId": "AET-2049",
-        },
+    print("\n=== 4. POST /api/robot/run ===")
+    run = post(
+        "/api/robot/run",
+        {"startDate": "2026-05-27", "days": 2},
     )
-    print(json.dumps(verify2, indent=2))
-    assert verify2.get("verificationSource") == "excel", verify2
-    assert verify2.get("planInExcelCatalog") is True, verify2
+    print(json.dumps(run, indent=2))
+    run_id = run.get("runId")
+    assert run_id, run
+    assert run.get("status") == "awaiting_login", run
 
-    print("\nAll API smoke tests passed.")
+    print("\n=== 5. GET /api/robot/runs/{runId} ===")
+    detail = get(f"/api/robot/runs/{run_id}")
+    print(json.dumps(detail, indent=2))
+    assert detail.get("runId") == run_id, detail
+    assert detail.get("status") in ("awaiting_login", "running", "completed"), detail
+
+    print("\nAll IVF API smoke tests passed.")
     return 0
 
 

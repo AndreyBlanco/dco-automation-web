@@ -1,1 +1,1 @@
-# DCO Automation verification API
+# DCO Automation — IVF API gateway (Sheet + Dentrix robot)

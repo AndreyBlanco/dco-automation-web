@@ -1,19 +1,11 @@
-import {
-  CalendarDays,
-  FileBarChart2,
-  Home,
-  Settings,
-  Users,
-} from 'lucide-react'
+import { ClipboardCheck, RefreshCw } from 'lucide-react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { AccountMenu } from './AccountMenu'
 import styles from './MobileTabBar.module.css'
 
 const tabs = [
-  { path: '/', label: 'Home', icon: Home },
-  { path: '/patients', label: 'Patients', icon: Users },
-  { path: '/appointments', label: 'Appts', icon: CalendarDays },
-  { path: '/reports', label: 'Reports', icon: FileBarChart2 },
-  { path: '/settings', label: 'More', icon: Settings },
+  { path: '/verification', label: 'IVF', icon: ClipboardCheck },
+  { path: '/sync', label: 'Sync', icon: RefreshCw },
 ]
 
 export function MobileTabBar() {
@@ -25,9 +17,8 @@ export function MobileTabBar() {
       <div className={styles.inner}>
         {tabs.map(({ path, label, icon: Icon }) => {
           const active =
-            path === '/'
-              ? location.pathname === '/'
-              : location.pathname.startsWith(path)
+            location.pathname === path ||
+            (path === '/verification' && location.pathname === '/')
           return (
             <button
               key={path}
@@ -40,6 +31,7 @@ export function MobileTabBar() {
             </button>
           )
         })}
+        <AccountMenu variant="mobile" />
       </div>
     </div>
   )

@@ -1,0 +1,252 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  max-width: 56rem;
+}
+
+.pageTitle {
+  margin: 0 0 var(--spacing-xs);
+}
+
+.pageLead {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  line-height: 1.5;
+}
+
+.banner {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  font-size: var(--font-size-small);
+}
+
+.bannerWarn {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: var(--spacing-md);
+  align-items: end;
+}
+
+@media (max-width: 480px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hint {
+  margin: var(--spacing-sm) 0 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+}
+
+.instructions {
+  margin: 0;
+  padding-left: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.statusPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.statusRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.pill {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.pillIdle {
+  background: var(--color-neutral);
+  color: var(--color-text-muted);
+}
+
+.pillWait {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.pillRun {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.pillOk {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.pillBad {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+}
+
+.statBox {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--color-neutral);
+  text-align: center;
+}
+
+.statValue {
+  font-size: 1.25rem;
+  font-weight: 700;
+  font-family: var(--font-heading);
+}
+
+.statLabel {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.awaitingCallout {
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  background: #fffbeb;
+  border: 2px solid #f59e0b;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.awaitingTitle {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--font-size-body);
+  color: #92400e;
+}
+
+.awaitingText {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.inlineError {
+  margin-top: var(--spacing-md);
+}
+
+.logHeading {
+  margin: 8px 0 0;
+  font-size: var(--font-size-body);
+  font-weight: 700;
+}
+
+.logList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.logItem {
+  font-size: var(--font-size-small);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+  border-left: 3px solid #94a3b8;
+}
+
+.logInfo {
+  border-left-color: var(--color-primary);
+}
+
+.logWarn {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.logError {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+
+.logMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.logLevel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.logTime {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.logMessage {
+  display: block;
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.errorText {
+  color: #991b1b;
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  margin: 0;
+}
+

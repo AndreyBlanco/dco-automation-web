@@ -1,68 +1,66 @@
-# DCO Automation — Verification API (Python)
+# DCO Automation — IVF API Gateway
 
-FastAPI service for the insurance verification robot: **Excel catalog lookup → insurer portal → Excel write**.
+FastAPI service for Laura’s operational workflow: **Google Sheet** as the operational database and **Dentrix** robot control. The React UI calls this gateway only (never Google or Dentrix directly).
 
-Matches the frontend contract in `src/types/verification-api.ts`.
+**Sheet rows:** if `credentials/google_credentials.json` exists, `GET /api/sheet/rows` reads the live Google Sheet. **Dentrix robot:** `app/robots/dentrix_scraper.py` runs in-process (background thread) when `ROBOT_USE_STUB` is not set.
 
-## Setup
+## Run locally
 
 ```bash
 cd api
 python -m venv .venv
 .venv\Scripts\activate          # Windows
-# source .venv/bin/activate     # macOS/Linux
 pip install -r requirements.txt
-```
-
-## Run
-
-```bash
-cd api
 uvicorn app.main:app --reload --port 8000
 ```
 
-- Health: http://localhost:8000/health  
-- OpenAPI: http://localhost:8000/docs  
-
-On first start, creates `api/data/plan_catalog.xlsx` with seed plans (Aetna, SmileCare, etc.).
-
-## Connect the React UI
-
-In the repo root, create `.env.local`:
-
-```env
-VITE_VERIFICATION_API_URL=http://localhost:8000
-```
-
-Then:
+Smoke test (server must be running):
 
 ```bash
-npm run dev
+python scripts/smoke_test_api.py
 ```
-
-Open a patient → **Verify insurance**. The UI uses `HttpInsuranceVerificationService` instead of the in-browser stub.
 
 ## Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/health` | Service + Excel path |
-| GET | `/api/verification/catalog/lookup?carrier=&plan=` | Plan catalog lookup |
-| POST | `/api/verification/verify` | Full robot pipeline |
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/health` | Liveness |
+| GET | `/api/sheet/rows` | List operational rows (filters: `date`, `dateFrom`, `dateTo`, `ivfStatus`, `kindOfInsurance`, `q`) |
+| PATCH | `/api/sheet/row` | Update `ivfStatus` and/or `notes` (columns E/J only — never G/H) |
+| POST | `/api/robot/run` | Start Dentrix → Sheet sync (`app/robots/dentrix_scraper.py`) |
+| POST | `/api/robot/runs/{runId}/resume` | Operator confirms Dentrix login + calendar ready |
+| GET | `/api/robot/runs/{runId}` | Poll run status + logs |
 
-## Excel workbook
+### Removed (legacy Sprint 1)
 
-Sheets:
+- `GET /api/verification/catalog/lookup`
+- `POST /api/verification/verify`
+- `portal_scraper.py`, `verification_service.py`, `excel_catalog.py`
 
-- **plan_catalog** — `carrier`, `plan_name`, `portal_url` (known plan types)
-- **verification_log** — audit trail of each verification run
+## Frontend wiring
 
-## Portal automation
+In the repo root `.env.local`:
 
-`USE_PLAYWRIGHT=false` (default) uses a **deterministic stub**: member IDs ending in an **even digit** → verified.
+```env
+VITE_API_URL=http://localhost:8000
+VITE_SHEET_USE_API=true
+VITE_DENTRIX_SYNC_USE_API=true
+```
 
-Set `USE_PLAYWRIGHT=true` when Playwright is wired in `app/portal_scraper.py`.
+### Operator test (Laura / team)
 
-## Environment
+1. Run API on the **same Windows PC** that can open Dentrix (`uvicorn` from `api/`).
+2. Run UI with the env vars above.
+3. **Dentrix Sync** → Start → Chromium opens → login + calendar.
+4. Click **“Dentrix is ready — continue”** in the app.
+5. When status is **Completed**, open **IVF Verification** (refresh) to see `test_excel` rows.
 
-Copy `api/.env.example` to `api/.env` to customize `EXCEL_PATH`, `CORS_ORIGINS`, and `USE_PLAYWRIGHT`.
+Run state files live in `runs/` (gitignored). Playwright profile: `user_data/`.
+
+## Next steps (Laura)
+
+- [ ] Google Sheets service account + `IVF-List-2026` tab
+- [x] `app/robots/dentrix_scraper.py` — Playwright; writes columns A/C/D/E/F/I/J only
+- [ ] Laura: harden selectors / production Sheet tab names
+
+See `docs/ARCHITECTURE_IVF_WORKFLOW.md`.
