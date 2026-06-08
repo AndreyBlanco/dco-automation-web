@@ -157,26 +157,6 @@
   line-height: 1.35;
 }
 
-.empty,
-.errorBox {
-  padding: var(--spacing-xl);
-  text-align: center;
-  color: var(--color-text-muted);
-}
-
-.errorBox {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--spacing-md);
-}
-
-.loading {
-  padding: var(--spacing-xl);
-  text-align: center;
-  color: var(--color-text-muted);
-}
-
 .kindTag {
   font-weight: 600;
   color: var(--color-text);

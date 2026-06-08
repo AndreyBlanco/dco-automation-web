@@ -147,6 +147,12 @@
   font-weight: 600;
 }
 
+.roleTag {
+  font-weight: 600;
+  color: var(--color-text-muted);
+  font-size: 0.85em;
+}
+
 .menuLogout {
   display: block;
   width: 100%;

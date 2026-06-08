@@ -1,18 +1,21 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { EmptyState, ErrorState, LoadingState } from '../components/ui/AsyncFeedback'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { TextField } from '../components/ui/Field'
 import { dentrixSyncDataSourceLabel } from '../services/dentrix-sync/createDentrixSyncService'
 import { useDentrixSync } from '../hooks/useDentrixSync'
 import type { DentrixSyncRunStatus } from '../types/dentrix-sync-api'
+import { defaultSyncStartDate } from '../utils/dateDefaults'
+import { formatLogTime } from '../utils/formatLogTime'
 import styles from './DentrixSyncPage.module.css'
 
 const INSTRUCTIONS = [
   'Start sync here — the API runs the integrated Dentrix robot on the machine where uvicorn is running.',
   'A Chromium window opens on that PC. Log in to Dentrix Ascend if needed.',
-  'Position the calendar on the first clinic day, then press “Dentrix is ready” in this app.',
+  'Position the calendar on the first clinic day, then press “Dentrix is ready” below.',
   'The robot writes to your Google Sheet (columns A/C/D/E/F/I/J only — never G/H). Medicaid is skipped.',
-  'When status is Completed, go to IVF Verification (sidebar or tab bar) and refresh to see test_excel updates.',
+  'When status is Completed, go to IVF Verification (sidebar or tab bar) and refresh to see updates.',
 ]
 
 function statusPillClass(status: DentrixSyncRunStatus | 'idle'): string {
@@ -36,17 +39,25 @@ function statusPillClass(status: DentrixSyncRunStatus | 'idle'): string {
 
 function statusLabel(status: DentrixSyncRunStatus | 'idle'): string {
   if (status === 'idle') return 'Not started'
-  if (status === 'awaiting_login') return 'Awaiting login'
+  if (status === 'awaiting_login') return 'Awaiting operator'
+  if (status === 'pending') return 'Starting'
   return status.charAt(0).toUpperCase() + status.slice(1).replace('_', ' ')
 }
 
 export function DentrixSyncPage() {
-  const [startDate, setStartDate] = useState('2026-06-01')
+  const [startDate, setStartDate] = useState(defaultSyncStartDate)
   const [days, setDays] = useState('1')
-  const { phase, run, error, start, resume, reset, isBusy } = useDentrixSync()
+  const { phase, run, error, start, resume, reset, isBusy, refresh } = useDentrixSync()
 
   const dataSource = dentrixSyncDataSourceLabel()
   const displayStatus: DentrixSyncRunStatus | 'idle' = run?.status ?? 'idle'
+  const awaitingOperator = run?.status === 'awaiting_login'
+  const formLocked = isBusy && !awaitingOperator
+
+  const logEntries = useMemo(() => {
+    if (!run?.logs?.length) return []
+    return [...run.logs].reverse()
+  }, [run?.logs])
 
   function handleStart() {
     const n = Number.parseInt(days, 10)
@@ -75,9 +86,22 @@ export function DentrixSyncPage() {
       >
         Data source: <strong>{dataSource}</strong>
         {dataSource === 'mock' && (
-          <> — simulated run timeline until <code>POST /api/robot/run</code> is available.</>
+          <> — simulated run timeline until <code>VITE_DENTRIX_SYNC_USE_API=true</code> is set.</>
         )}
       </div>
+
+      {awaitingOperator && (
+        <div className={styles.awaitingCallout} role="status">
+          <p className={styles.awaitingTitle}>Action required</p>
+          <p className={styles.awaitingText}>
+            Log in to Dentrix on the API machine, open the schedule on <strong>{startDate}</strong>,
+            then confirm below to start processing patients.
+          </p>
+          <Button variant="primary" size="lg" onClick={() => void resume()} disabled={phase === 'starting'}>
+            Dentrix is ready — continue
+          </Button>
+        </div>
+      )}
 
       <div className={styles.grid}>
         <Card noHover>
@@ -89,7 +113,7 @@ export function DentrixSyncPage() {
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
-              disabled={isBusy}
+              disabled={formLocked}
             />
             <TextField
               id="sync-days"
@@ -99,7 +123,7 @@ export function DentrixSyncPage() {
               max={31}
               value={days}
               onChange={(e) => setDays(e.target.value)}
-              disabled={isBusy}
+              disabled={formLocked}
             />
           </div>
           <p className={styles.hint}>
@@ -110,7 +134,7 @@ export function DentrixSyncPage() {
               variant="primary"
               size="lg"
               onClick={handleStart}
-              disabled={isBusy || daysInvalid || !startDate}
+              disabled={formLocked || daysInvalid || !startDate}
             >
               {phase === 'starting' ? 'Starting…' : phase === 'polling' ? 'Running…' : 'Start sync'}
             </Button>
@@ -120,12 +144,15 @@ export function DentrixSyncPage() {
               </Button>
             )}
           </div>
-          {run?.status === 'awaiting_login' && (
-            <Button variant="primary" size="lg" onClick={() => void resume()}>
-              Dentrix is ready — continue
-            </Button>
+          {error && phase === 'error' && !run && (
+            <div className={styles.inlineError}>
+              <ErrorState
+                message={error}
+                onRetry={handleStart}
+                retryLabel="Try again"
+              />
+            </div>
           )}
-          {error && <p className={styles.errorText}>{error}</p>}
         </Card>
 
         <Card noHover>
@@ -141,64 +168,93 @@ export function DentrixSyncPage() {
       <Card noHover>
         <div className={styles.statusPanel}>
           <h3 style={{ margin: 0 }}>Run status</h3>
-          <div className={styles.statusRow}>
-            <span className={`${styles.pill} ${statusPillClass(displayStatus)}`}>
-              {statusLabel(displayStatus)}
-            </span>
-            {run?.runId && (
-              <span className={styles.hint} style={{ margin: 0 }}>
-                Run ID: <code>{run.runId}</code>
-              </span>
-            )}
-          </div>
-          {run?.message && (
-            <p className={styles.hint} style={{ margin: 0 }}>
-              {run.message}
-            </p>
+
+          {phase === 'starting' && (
+            <LoadingState message="Starting robot on the API machine…" compact />
           )}
 
-          {run && (run.processed !== undefined || run.skippedMedicaid !== undefined) && (
-            <div className={styles.statsGrid}>
-              <div className={styles.statBox}>
-                <div className={styles.statValue}>{run.processed ?? '—'}</div>
-                <div className={styles.statLabel}>Processed</div>
-              </div>
-              <div className={styles.statBox}>
-                <div className={styles.statValue}>{run.skippedMedicaid ?? '—'}</div>
-                <div className={styles.statLabel}>Skipped Medicaid</div>
-              </div>
-              <div className={styles.statBox}>
-                <div className={styles.statValue}>{run.errors ?? 0}</div>
-                <div className={styles.statLabel}>Errors</div>
-              </div>
-            </div>
-          )}
-
-          {run?.logs && run.logs.length > 0 && (
+          {phase !== 'starting' && (
             <>
-              <h4 style={{ margin: '8px 0 0', fontSize: 'var(--font-size-body)' }}>Activity log</h4>
-              <ul className={styles.logList} aria-live="polite">
-                {run.logs.map((entry, i) => (
-                  <li
-                    key={`${entry.at}-${i}`}
-                    className={`${styles.logItem} ${
-                      entry.level === 'warn'
-                        ? styles.logWarn
-                        : entry.level === 'error'
-                          ? styles.logError
-                          : ''
-                    }`}
-                  >
-                    <span className={styles.logTime}>{entry.at}</span>
-                    {entry.message}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+              <div className={styles.statusRow}>
+                <span className={`${styles.pill} ${statusPillClass(displayStatus)}`}>
+                  {statusLabel(displayStatus)}
+                </span>
+                {run?.runId && (
+                  <span className={styles.hint} style={{ margin: 0 }}>
+                    Run ID: <code>{run.runId}</code>
+                  </span>
+                )}
+              </div>
+              {run?.message && (
+                <p className={styles.hint} style={{ margin: 0 }}>
+                  {run.message}
+                </p>
+              )}
 
-          {phase === 'idle' && !run && (
-            <p className={styles.hint}>No active run. Configure dates and press Start sync.</p>
+              {error && phase === 'error' && run && (
+                <ErrorState
+                  message={error}
+                  onRetry={() => void refresh()}
+                  retryLabel="Refresh status"
+                />
+              )}
+
+              {run && (run.processed !== undefined || run.skippedMedicaid !== undefined) && (
+                <div className={styles.statsGrid}>
+                  <div className={styles.statBox}>
+                    <div className={styles.statValue}>{run.processed ?? '—'}</div>
+                    <div className={styles.statLabel}>Processed</div>
+                  </div>
+                  <div className={styles.statBox}>
+                    <div className={styles.statValue}>{run.skippedMedicaid ?? '—'}</div>
+                    <div className={styles.statLabel}>Skipped Medicaid</div>
+                  </div>
+                  <div className={styles.statBox}>
+                    <div className={styles.statValue}>{run.errors ?? 0}</div>
+                    <div className={styles.statLabel}>Errors</div>
+                  </div>
+                </div>
+              )}
+
+              {logEntries.length > 0 && (
+                <>
+                  <h4 className={styles.logHeading}>Activity log</h4>
+                  <ul className={styles.logList} aria-live="polite">
+                    {logEntries.map((entry, i) => (
+                      <li
+                        key={`${entry.at}-${entry.message}-${i}`}
+                        className={`${styles.logItem} ${
+                          entry.level === 'warn'
+                            ? styles.logWarn
+                            : entry.level === 'error'
+                              ? styles.logError
+                              : entry.level === 'info'
+                                ? styles.logInfo
+                                : ''
+                        }`}
+                      >
+                        <span className={styles.logMeta}>
+                          <span className={styles.logLevel}>{entry.level}</span>
+                          <span className={styles.logTime}>{formatLogTime(entry.at)}</span>
+                        </span>
+                        <span className={styles.logMessage}>{entry.message}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+
+              {phase === 'idle' && !run && (
+                <EmptyState
+                  title="No active run"
+                  description="Set the start date and number of days, then press Start sync."
+                />
+              )}
+
+              {phase === 'polling' && run && logEntries.length === 0 && (
+                <LoadingState message="Waiting for robot activity…" compact />
+              )}
+            </>
           )}
         </div>
       </Card>

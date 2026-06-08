@@ -16,7 +16,9 @@ export function AccountMenu({ variant }: AccountMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null)
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const initial = user?.charAt(0).toUpperCase() ?? '?'
+  const displayName = user?.username ?? null
+  const roleLabel = user?.role === 'admin' ? 'Admin' : user?.role === 'operator' ? 'Operator' : null
+  const initial = displayName?.charAt(0).toUpperCase() ?? '?'
   const isSidebar = variant === 'sidebar'
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export function AccountMenu({ variant }: AccountMenuProps) {
       <button
         type="button"
         className={isSidebar ? styles.sidebarBtn : styles.mobileBtn}
-        aria-label={`Account menu for ${user ?? 'user'}`}
+        aria-label={`Account menu for ${displayName ?? 'user'}`}
         aria-expanded={menuOpen}
         aria-haspopup="menu"
         aria-controls={menuId}
@@ -69,7 +71,7 @@ export function AccountMenu({ variant }: AccountMenuProps) {
         )}
         {isSidebar && (
           <span className={styles.sidebarLabel}>
-            <span className={styles.userName}>{user ?? 'Signed in'}</span>
+            <span className={styles.userName}>{displayName ?? 'Signed in'}</span>
             <span className={styles.chevron} aria-hidden>
               {menuOpen ? '▴' : '▾'}
             </span>
@@ -85,7 +87,13 @@ export function AccountMenu({ variant }: AccountMenuProps) {
           role="menu"
         >
           <p className={styles.menuUser} role="presentation">
-            Signed in as <strong>{user}</strong>
+            Signed in as <strong>{displayName}</strong>
+            {roleLabel && (
+              <>
+                {' '}
+                <span className={styles.roleTag}>({roleLabel})</span>
+              </>
+            )}
           </p>
           <button
             type="button"

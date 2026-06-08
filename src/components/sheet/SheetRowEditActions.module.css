@@ -44,3 +44,14 @@
   font-size: 0.75rem;
   color: #b91c1c;
 }
+
+.charCount {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-align: right;
+}
+
+.selectInvalid,
+.textareaInvalid {
+  border-color: #b91c1c;
+}

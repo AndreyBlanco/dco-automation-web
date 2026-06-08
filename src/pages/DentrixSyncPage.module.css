@@ -143,23 +143,62 @@
   font-weight: 600;
 }
 
+.awaitingCallout {
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  background: #fffbeb;
+  border: 2px solid #f59e0b;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.awaitingTitle {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--font-size-body);
+  color: #92400e;
+}
+
+.awaitingText {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text);
+  line-height: 1.45;
+}
+
+.inlineError {
+  margin-top: var(--spacing-md);
+}
+
+.logHeading {
+  margin: 8px 0 0;
+  font-size: var(--font-size-body);
+  font-weight: 700;
+}
+
 .logList {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 280px;
+  max-height: 320px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .logItem {
   font-size: var(--font-size-small);
-  padding: 8px 10px;
+  padding: 10px 12px;
   border-radius: var(--radius-sm);
   background: #f8fafc;
   border-left: 3px solid #94a3b8;
+}
+
+.logInfo {
+  border-left-color: var(--color-primary);
 }
 
 .logWarn {
@@ -172,11 +211,29 @@
   background: #fef2f2;
 }
 
+.logMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.logLevel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
 .logTime {
-  display: block;
   font-size: 0.7rem;
   color: var(--color-text-muted);
-  margin-bottom: 2px;
+}
+
+.logMessage {
+  display: block;
+  line-height: 1.4;
 }
 
 .actions {

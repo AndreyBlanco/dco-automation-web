@@ -30,3 +30,18 @@
   min-height: 96px;
   resize: vertical;
 }
+
+.inputError {
+  border-color: #b91c1c;
+}
+
+.inputError:focus {
+  border-color: #b91c1c;
+  box-shadow: 0 0 0 1px #b91c1c;
+}
+
+.error {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #b91c1c;
+}

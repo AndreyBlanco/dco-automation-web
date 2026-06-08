@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { SheetRowEditActions } from '../components/sheet/SheetRowEditActions'
+import { EmptyState, ErrorState, LoadingState } from '../components/ui/AsyncFeedback'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { TextField } from '../components/ui/Field'
@@ -7,6 +8,7 @@ import { IvfStatusBadge } from '../components/ui/IvfStatusBadge'
 import { useToast } from '../context/ToastContext'
 import { sheetRowsDataSourceLabel } from '../services/sheet/createSheetRowsService'
 import { useSheetRows } from '../hooks/useSheetRows'
+import { defaultSheetDateFrom, defaultSheetDateTo } from '../utils/dateDefaults'
 import type { IvfStatusFilter, KindOfInsuranceFilter } from '../types/sheet-row'
 import type { SheetRowsQuery } from '../types/sheet-api'
 import styles from './IvfDashboardPage.module.css'
@@ -27,8 +29,8 @@ const KIND_FILTERS: { id: KindOfInsuranceFilter; label: string }[] = [
 export function IvfDashboardPage() {
   const [statusFilter, setStatusFilter] = useState<IvfStatusFilter>('all')
   const [kindFilter, setKindFilter] = useState<KindOfInsuranceFilter>('all')
-  const [dateFrom, setDateFrom] = useState('2026-06-01')
-  const [dateTo, setDateTo] = useState('2026-06-02')
+  const [dateFrom, setDateFrom] = useState(defaultSheetDateFrom)
+  const [dateTo, setDateTo] = useState(defaultSheetDateTo)
   const [query, setQuery] = useState('')
 
   const apiQuery: SheetRowsQuery = useMemo(
@@ -48,15 +50,23 @@ export function IvfDashboardPage() {
 
   const handleSaveRow = useCallback(
     async (patch: { rowIndex: number; ivfStatus: 'New' | 'DONE B'; notes: string }) => {
-      await patchRow({
-        rowIndex: patch.rowIndex,
-        ivfStatus: patch.ivfStatus,
-        notes: patch.notes,
-      })
-      pushToast('Row saved to Google Sheet (columns E and J).', 'success')
+      try {
+        await patchRow({
+          rowIndex: patch.rowIndex,
+          ivfStatus: patch.ivfStatus,
+          notes: patch.notes,
+        })
+        pushToast('Row saved to Google Sheet (columns E and J).', 'success')
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Could not save row.'
+        pushToast(msg, 'error')
+        throw e
+      }
     },
     [patchRow, pushToast],
   )
+
+  const metricsLoading = loadState === 'loading' || loadState === 'idle'
 
   return (
     <div className={styles.page}>
@@ -74,19 +84,25 @@ export function IvfDashboardPage() {
         <Card>
           <div className={styles.metric}>
             <span className={styles.metricLabel}>Rows in view</span>
-            <span className={styles.metricValue}>{stats.total}</span>
+            <span className={styles.metricValue}>
+              {metricsLoading ? '—' : stats.total}
+            </span>
           </div>
         </Card>
         <Card>
           <div className={styles.metric}>
             <span className={styles.metricLabel}>New</span>
-            <span className={styles.metricValue}>{stats.newCount}</span>
+            <span className={styles.metricValue}>
+              {metricsLoading ? '—' : stats.newCount}
+            </span>
           </div>
         </Card>
         <Card>
           <div className={styles.metric}>
             <span className={styles.metricLabel}>DONE B</span>
-            <span className={styles.metricValue}>{stats.doneBCount}</span>
+            <span className={styles.metricValue}>
+              {metricsLoading ? '—' : stats.doneBCount}
+            </span>
           </div>
         </Card>
       </div>
@@ -153,22 +169,27 @@ export function IvfDashboardPage() {
         </div>
 
         {loadState === 'loading' && (
-          <p className={styles.loading} aria-live="polite">
-            Loading sheet rows…
-          </p>
+          <LoadingState message="Loading sheet rows…" />
         )}
 
-        {loadState === 'error' && (
-          <div className={styles.errorBox}>
-            <p>{error}</p>
-            <Button variant="primary" onClick={() => void reload()}>
-              Retry
-            </Button>
-          </div>
+        {loadState === 'error' && error && (
+          <ErrorState message={error} onRetry={() => void reload()} />
         )}
 
         {loadState === 'success' && rows.length === 0 && (
-          <p className={styles.empty}>No rows match these filters.</p>
+          <EmptyState
+            title="No rows in this date range"
+            description={
+              canEditRows
+                ? 'Widen the From/To dates or clear filters. Patient rows must fall within the selected range.'
+                : 'Enable VITE_SHEET_USE_API=true and connect the API to load live Sheet data, or widen the date range for mock rows.'
+            }
+            action={
+              <Button variant="secondary" onClick={() => void reload()}>
+                Refresh
+              </Button>
+            }
+          />
         )}
 
         {loadState === 'success' && rows.length > 0 && (

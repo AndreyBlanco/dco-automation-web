@@ -46,6 +46,49 @@
   gap: var(--spacing-md);
 }
 
+.sourceBadge {
+  margin: 0 0 var(--spacing-md);
+  padding: 8px 12px;
+  font-size: var(--font-size-small);
+  background: var(--color-secondary);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+}
+
+.formError {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  font-size: var(--font-size-small);
+  font-weight: 600;
+}
+
+.demoBox {
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-sm);
+  background: var(--color-neutral);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.demoTitle {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.demoList {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
+
 .hint {
   margin-top: var(--spacing-md);
   font-size: var(--font-size-small);

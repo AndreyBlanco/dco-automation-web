@@ -4,6 +4,7 @@ import type { IvfStatus, SheetRow } from '../../types/sheet-row'
 import styles from './SheetRowEditActions.module.css'
 
 const STATUS_OPTIONS: IvfStatus[] = ['New', 'DONE B']
+const NOTES_MAX_LENGTH = 2000
 
 interface SheetRowEditActionsProps {
   row: SheetRow
@@ -39,11 +40,31 @@ export function SheetRowEditActions({ row, canEdit, disabled, onSave }: SheetRow
     setLocalError(null)
   }
 
+  function validate(): string | null {
+    if (!STATUS_OPTIONS.includes(ivfStatus)) {
+      return 'Status must be New or DONE B.'
+    }
+    if (notes.length > NOTES_MAX_LENGTH) {
+      return `Notes must be ${NOTES_MAX_LENGTH} characters or fewer.`
+    }
+    return null
+  }
+
   async function handleSave() {
+    const validationError = validate()
+    if (validationError) {
+      setLocalError(validationError)
+      return
+    }
+
     setSaving(true)
     setLocalError(null)
     try {
-      await onSave({ rowIndex: row.rowIndex!, ivfStatus, notes })
+      await onSave({
+        rowIndex: row.rowIndex!,
+        ivfStatus,
+        notes: notes.trim(),
+      })
       setEditing(false)
     } catch (e) {
       setLocalError(e instanceof Error ? e.message : 'Could not save row.')
@@ -84,8 +105,13 @@ export function SheetRowEditActions({ row, canEdit, disabled, onSave }: SheetRow
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={3}
+          maxLength={NOTES_MAX_LENGTH}
           disabled={saving}
+          aria-invalid={notes.length > NOTES_MAX_LENGTH}
         />
+        <span className={styles.charCount}>
+          {notes.length}/{NOTES_MAX_LENGTH}
+        </span>
       </label>
       <div className={styles.btnRow}>
         <Button type="button" variant="primary" size="sm" onClick={() => void handleSave()} disabled={saving}>
