@@ -13,6 +13,10 @@ export const mockSheetRows: SheetRow[] = [
     insurance: 'AETNA',
     notes: 'CHART: 1042\nPID: 19000011174867\nSUB ID: 8821044\nIVF 2026 FOUND',
     appointmentTime: '9:00AM',
+    lastEdit: {
+      username: 'admin@dco.test',
+      editedAt: '2026-05-27T18:31:00.000Z',
+    },
   },
   {
     id: 'row-13',

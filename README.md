@@ -10,13 +10,13 @@
 
 | Screen | Route | Purpose |
 |--------|-------|---------|
-| IVF Verification | `/verification` | Operational sheet rows — filter by date, status, insurance type |
+| IVF Verification | `/verification` | Sheet rows, edit history, productivity summary, CSV export |
 | Dentrix Sync | `/sync` | Start and poll Dentrix → Sheet robot runs |
 | Login | `/login` | Mock or API auth; roles **admin** / **operator** |
 
 **Not included anymore:** Sprint 1 insurer-portal demo (`verified` / `denied`, Excel catalog, `/patients`, appointments, reports).
 
-See `docs/ARCHITECTURE_IVF_WORKFLOW.md` and `api/README.md`.
+See `docs/ARCHITECTURE_IVF_WORKFLOW.md`, `docs/OPERATOR_RUNBOOK.md`, and `api/README.md`.
 
 ## Scripts
 
@@ -87,6 +87,16 @@ Without the sheet/sync flags, the UI uses in-browser mocks (fine for layout revi
 
 With API auth enabled, the app restores the session on load via `GET /auth/me` and signs out automatically when the API returns **401** (expired or invalid token).
 
+### Sprint 4 — Audit, reports, operator docs
+
+| Feature | UI behavior |
+|---------|-------------|
+| **Change audit** | Per-row **History** modal; **Last edit** column when metadata exists. Mock log in browser until `GET /api/sheet/audit` ships. |
+| **Reports (S4.1)** | **Productivity summary** on `/verification`: completion %, breakdown by insurance type and top carriers. |
+| **Export** | **Export rows CSV** and **Export summary CSV** for the current filtered view. |
+| **Post-sync UX** | After a completed Dentrix run, `/verification` shows a refresh banner. |
+| **Runbook** | `docs/OPERATOR_RUNBOOK.md` — daily workflow for operators. |
+
 ## Deploy (static UI)
 
 ### Vercel
@@ -107,9 +117,9 @@ Deploy the **API** separately (Render, Railway, etc.) and set `VITE_API_URL` in 
 
 ## Team next steps (CSE499)
 
-- Laura: Google Sheets service account, `api/app/robots/dentrix_scraper.py`, replace `api/app/stubs/`.
-- Confirm Sheet tab name, PATCH rules, and robot trigger with `POST /api/robot/run`.
-- Review on feature branch before merge to `main`.
+- Laura: `GET /api/sheet/audit` + persist PATCH events; server-side data validation (S3.4).
+- Confirm audit storage (Sheet tab vs backend) and `lastEdit` on row payloads.
+- Review Sprint 4 on feature branch before merge to `main`.
 
 ## License
 

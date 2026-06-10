@@ -1,3 +1,5 @@
+import type { SheetRowLastEdit } from './sheet-audit'
+
 /**
  * Operational IVF workflow — Google Sheet as source of truth.
  *
@@ -48,6 +50,8 @@ export interface SheetRow {
   notes: string
   /** Optional appointment time from robot metadata (not always in sheet). */
   appointmentTime?: string
+  /** Latest manual edit metadata when API or mock audit provides it. */
+  lastEdit?: SheetRowLastEdit
 }
 
 /** KPI counts for IVF ops dashboard header. */

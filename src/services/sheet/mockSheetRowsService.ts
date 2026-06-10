@@ -1,4 +1,6 @@
 import { mockSheetRows } from '../../data/mockSheetRows'
+import { readStoredUser } from '../auth/authStorage'
+import { recordMockPatchAudit } from '../audit/recordSheetPatchAudit'
 import type {
   SheetRowPatch,
   SheetRowPatchResponse,
@@ -46,10 +48,13 @@ export class MockSheetRowsService implements SheetRowsService {
       throw new Error(`No row with rowIndex=${patch.rowIndex}`)
     }
     const current = rowsStore[idx]
+    const editor = readStoredUser()?.username ?? 'demo-user'
+    const lastEdit = recordMockPatchAudit(current, patch, editor)
     const updated: SheetRow = {
       ...current,
       ivfStatus: patch.ivfStatus ?? current.ivfStatus,
       notes: patch.notes ?? current.notes,
+      lastEdit,
     }
     rowsStore[idx] = updated
     return { ok: true, row: updated, message: 'Row updated (mock).' }

@@ -1,0 +1,105 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  align-items: flex-start;
+}
+
+.title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.lead {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-small);
+  max-width: 36rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--spacing-sm);
+}
+
+.metric {
+  background: var(--color-secondary);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.metricLabel {
+  font-size: var(--font-size-small);
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.metricValue {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
+@media (max-width: 768px) {
+  .metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .tables {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tableTitle {
+  margin: 0 0 var(--spacing-sm);
+  font-size: var(--font-size-small);
+  font-weight: 700;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-small);
+}
+
+.table th,
+.table td {
+  text-align: left;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.table th {
+  background: var(--color-secondary);
+  font-weight: 700;
+}
+
+.emptyCell {
+  color: var(--color-text-muted);
+  font-style: italic;
+}

@@ -32,6 +32,7 @@ python scripts/smoke_test_api.py
 | POST | `/api/robot/run` | Bearer (**admin**) | Start Dentrix → Sheet sync (`app/robots/dentrix_scraper.py`) |
 | POST | `/api/robot/runs/{runId}/resume` | Bearer (**admin**) | Confirm Dentrix login + calendar ready |
 | GET | `/api/robot/runs/{runId}` | Bearer | Poll run status + logs |
+| GET | `/api/sheet/audit` | Bearer | Change history for PATCH on columns E/J *(Sprint 4 — planned)* |
 
 Demo users (class project only): `admin@dco.test` / `admin123`, `operator@dco.test` / `operator123`. Optional env: `AUTH_SECRET_KEY` (defaults to dev key).
 
@@ -68,4 +69,10 @@ Run state files live in `runs/` (gitignored). Playwright profile: `user_data/`.
 - [x] `app/robots/dentrix_scraper.py` — Playwright; writes columns A/C/D/E/F/I/J only
 - [ ] Laura: harden selectors / production Sheet tab names
 
-See `docs/ARCHITECTURE_IVF_WORKFLOW.md`.
+See `docs/ARCHITECTURE_IVF_WORKFLOW.md` and `docs/OPERATOR_RUNBOOK.md`.
+
+### Sprint 4 (planned)
+
+- Log every `PATCH /api/sheet/row` (user, timestamp, rowIndex, field, before/after).
+- Expose `GET /api/sheet/audit` with `rowIndex` and optional date filters.
+- Optionally include `lastEdit` on rows returned by `GET /api/sheet/rows`.
