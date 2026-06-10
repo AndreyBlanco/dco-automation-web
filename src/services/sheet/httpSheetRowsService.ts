@@ -5,8 +5,7 @@ import type {
   SheetRowsResponse,
   SheetRowsService,
 } from '../../types/sheet-api'
-
-import { readStoredToken } from '../auth/authStorage'
+import { authFetch, readApiErrorMessage } from '../auth/authFetch'
 
 export class HttpSheetRowsService implements SheetRowsService {
   private readonly baseUrl: string
@@ -17,11 +16,6 @@ export class HttpSheetRowsService implements SheetRowsService {
 
   private url(path: string): string {
     return `${this.baseUrl.replace(/\/$/, '')}${path}`
-  }
-
-  private authHeaders(): HeadersInit {
-    const token = readStoredToken()
-    return token ? { Authorization: `Bearer ${token}` } : {}
   }
 
   async listRows(query: SheetRowsQuery): Promise<SheetRowsResponse> {
@@ -35,32 +29,24 @@ export class HttpSheetRowsService implements SheetRowsService {
 
     const qs = params.toString()
 
-    const res = await fetch(
-      `${this.url('/api/sheet/rows')}${qs ? `?${qs}` : ''}`,
-      {
-        headers: this.authHeaders(),
-      },
-    )
+    const res = await authFetch(`${this.url('/api/sheet/rows')}${qs ? `?${qs}` : ''}`)
 
     if (!res.ok) {
-      throw new Error(`Failed to load sheet rows (${res.status})`)
+      throw new Error(await readApiErrorMessage(res, 'Failed to load sheet rows'))
     }
 
     return res.json() as Promise<SheetRowsResponse>
   }
 
   async patchRow(patch: SheetRowPatch): Promise<SheetRowPatchResponse> {
-    const res = await fetch(this.url('/api/sheet/row'), {
+    const res = await authFetch(this.url('/api/sheet/row'), {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.authHeaders(),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patch),
     })
 
     if (!res.ok) {
-      throw new Error(`Failed to update row (${res.status})`)
+      throw new Error(await readApiErrorMessage(res, 'Failed to update row'))
     }
 
     return res.json() as Promise<SheetRowPatchResponse>

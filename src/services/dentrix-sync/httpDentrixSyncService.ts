@@ -4,8 +4,7 @@ import type {
   DentrixSyncRunSummary,
   DentrixSyncService,
 } from '../../types/dentrix-sync-api'
-
-import { readStoredToken } from '../auth/authStorage'
+import { authFetch, readApiErrorMessage } from '../auth/authFetch'
 
 export class HttpDentrixSyncService implements DentrixSyncService {
   private readonly baseUrl: string
@@ -18,49 +17,37 @@ export class HttpDentrixSyncService implements DentrixSyncService {
     return `${this.baseUrl.replace(/\/$/, '')}${path}`
   }
 
-  private authHeaders(): HeadersInit {
-    const token = readStoredToken()
-    return token ? { Authorization: `Bearer ${token}` } : {}
-  }
-
   async startRun(request: DentrixSyncRunRequest): Promise<DentrixSyncRunSummary> {
-    const res = await fetch(this.url('/api/robot/run'), {
+    const res = await authFetch(this.url('/api/robot/run'), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...this.authHeaders(),
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(request),
     })
 
     if (!res.ok) {
-      throw new Error(`Failed to start Dentrix sync (${res.status})`)
+      throw new Error(await readApiErrorMessage(res, 'Failed to start Dentrix sync'))
     }
 
     return res.json() as Promise<DentrixSyncRunSummary>
   }
 
   async getRun(runId: string): Promise<DentrixSyncRunDetail> {
-    const res = await fetch(this.url(`/api/robot/runs/${encodeURIComponent(runId)}`), {
-      headers: this.authHeaders(),
-    })
+    const res = await authFetch(this.url(`/api/robot/runs/${encodeURIComponent(runId)}`))
 
     if (!res.ok) {
-      throw new Error(`Failed to load run status (${res.status})`)
+      throw new Error(await readApiErrorMessage(res, 'Failed to load run status'))
     }
 
     return res.json() as Promise<DentrixSyncRunDetail>
   }
 
   async resumeRun(runId: string): Promise<DentrixSyncRunDetail> {
-    const res = await fetch(this.url(`/api/robot/runs/${encodeURIComponent(runId)}/resume`), {
+    const res = await authFetch(this.url(`/api/robot/runs/${encodeURIComponent(runId)}/resume`), {
       method: 'POST',
-      headers: this.authHeaders(),
     })
 
     if (!res.ok) {
-      const text = await res.text()
-      throw new Error(text || `Failed to resume run (${res.status})`)
+      throw new Error(await readApiErrorMessage(res, 'Failed to resume run'))
     }
 
     return res.json() as Promise<DentrixSyncRunDetail>

@@ -88,22 +88,24 @@ export function LoginPage() {
 
         <p className={styles.sourceBadge} role="status">
           Auth: <strong>{authSource}</strong>
-          {authSource === 'mock' && (
-            <> — demo accounts below until the API login is enabled.</>
+          {authSource === 'mock' ? (
+            <> — local demo accounts below.</>
+          ) : (
+            <> — use the API demo emails below.</>
           )}
         </p>
 
         <form className={styles.form} onSubmit={(e) => void handleSubmit(e)} noValidate>
           <TextField
             id="username"
-            label="Username"
+            label={authSource === 'API' ? 'Email' : 'Username'}
             autoComplete="username"
             value={username}
             onChange={(e) => {
               setUsername(e.target.value)
               clearFieldError('username')
             }}
-            placeholder="admin or operator"
+            placeholder={authSource === 'API' ? 'admin@dco.test' : 'admin'}
             disabled={submitting}
             error={fieldErrors.username}
           />
@@ -140,21 +142,35 @@ export function LoginPage() {
         </form>
 
         <div className={styles.demoBox}>
-          <p className={styles.demoTitle}>Demo accounts (mock auth)</p>
+          <p className={styles.demoTitle}>
+            Demo accounts ({authSource === 'API' ? 'API' : 'mock'})
+          </p>
           <ul className={styles.demoList}>
-            <li>
-              <code>admin</code> / <code>admin</code> — full access (sync + edit)
-            </li>
-            <li>
-              <code>operator</code> / <code>operator</code> — dashboard edit only (D3 UI)
-            </li>
+            {authSource === 'API' ? (
+              <>
+                <li>
+                  <code>admin@dco.test</code> / <code>admin123</code> — sync + dashboard
+                </li>
+                <li>
+                  <code>operator@dco.test</code> / <code>operator123</code> — dashboard only
+                </li>
+              </>
+            ) : (
+              <>
+                <li>
+                  <code>admin</code> / <code>admin</code> — sync + dashboard
+                </li>
+                <li>
+                  <code>operator</code> / <code>operator</code> — dashboard only
+                </li>
+              </>
+            )}
           </ul>
         </div>
 
         <p className={styles.hint}>
-          Sheet and sync use the API when <code>VITE_SHEET_USE_API</code> and{' '}
-          <code>VITE_DENTRIX_SYNC_USE_API</code> are set. Auth API:{' '}
-          <code>VITE_AUTH_USE_API=true</code> (Sprint 3).
+          Operators do not see Dentrix Sync in the app. Admins can run sync from the sidebar or
+          mobile tab bar.
         </p>
       </div>
     </div>

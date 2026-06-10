@@ -1,4 +1,5 @@
-import type { AuthService, AuthUser, LoginCredentials, LoginResponse } from '../../types/auth-api'
+import type { AuthService, LoginCredentials, LoginResponse } from '../../types/auth-api'
+import { normalizeAuthUser } from './authMappers'
 
 export class HttpAuthService implements AuthService {
   private readonly baseUrl: string
@@ -30,13 +31,14 @@ export class HttpAuthService implements AuthService {
     }
 
     const data = (await res.json()) as LoginResponse
-    if (!data.accessToken || !data.user?.username) {
+    const user = normalizeAuthUser(data.user)
+    if (!data.accessToken) {
       throw new Error('Invalid login response from API.')
     }
-    return data
+    return { accessToken: data.accessToken, user }
   }
 
-  async getMe(accessToken: string): Promise<AuthUser> {
+  async getMe(accessToken: string): Promise<LoginResponse['user']> {
     const res = await fetch(`${this.baseUrl}/auth/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -45,7 +47,7 @@ export class HttpAuthService implements AuthService {
       throw new Error('Session expired. Please sign in again.')
     }
 
-    return (await res.json()) as AuthUser
+    return normalizeAuthUser((await res.json()) as LoginResponse['user'])
   }
 }
 
@@ -57,6 +59,6 @@ async function readErrorMessage(res: Response): Promise<string> {
   } catch {
     /* ignore */
   }
-  if (res.status === 401) return 'Invalid username or password.'
+  if (res.status === 401) return 'Invalid email or password.'
   return `Login failed (${res.status}).`
 }

@@ -12,7 +12,7 @@
 |--------|-------|---------|
 | IVF Verification | `/verification` | Operational sheet rows — filter by date, status, insurance type |
 | Dentrix Sync | `/sync` | Start and poll Dentrix → Sheet robot runs |
-| Login | `/login` | Simple auth gate (demo — any password) |
+| Login | `/login` | Mock or API auth; roles **admin** / **operator** |
 
 **Not included anymore:** Sprint 1 insurer-portal demo (`verified` / `denied`, Excel catalog, `/patients`, appointments, reports).
 
@@ -70,9 +70,22 @@ In `.env.local`:
 VITE_API_URL=http://localhost:8000
 VITE_SHEET_USE_API=true
 VITE_DENTRIX_SYNC_USE_API=true
+VITE_AUTH_USE_API=true
 ```
 
-Without those flags, the UI uses in-browser mocks (fine for layout review).
+Without the sheet/sync flags, the UI uses in-browser mocks (fine for layout review). Auth stays on **mock** until `VITE_AUTH_USE_API=true` (Laura’s `POST /auth/login`).
+
+### Auth and roles (Sprint 3)
+
+| Mode | Flag | Demo accounts |
+|------|------|----------------|
+| Mock (default) | omit `VITE_AUTH_USE_API` | `admin` / `admin`, `operator` / `operator` |
+| API | `VITE_AUTH_USE_API=true` | `admin@dco.test` / `admin123`, `operator@dco.test` / `operator123` |
+
+- **admin** — IVF dashboard + Dentrix Sync (`/sync`).
+- **operator** — IVF dashboard only; Sync is hidden and blocked server-side.
+
+With API auth enabled, the app restores the session on load via `GET /auth/me` and signs out automatically when the API returns **401** (expired or invalid token).
 
 ## Deploy (static UI)
 

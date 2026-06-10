@@ -22,14 +22,18 @@ python scripts/smoke_test_api.py
 
 ## Endpoints
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| GET | `/health` | Liveness |
-| GET | `/api/sheet/rows` | List operational rows (filters: `date`, `dateFrom`, `dateTo`, `ivfStatus`, `kindOfInsurance`, `q`) |
-| PATCH | `/api/sheet/row` | Update `ivfStatus` and/or `notes` (columns E/J only — never G/H) |
-| POST | `/api/robot/run` | Start Dentrix → Sheet sync (`app/robots/dentrix_scraper.py`) |
-| POST | `/api/robot/runs/{runId}/resume` | Operator confirms Dentrix login + calendar ready |
-| GET | `/api/robot/runs/{runId}` | Poll run status + logs |
+| Method | Path | Auth | Purpose |
+|--------|------|------|---------|
+| GET | `/health` | — | Liveness |
+| POST | `/auth/login` | — | Issue JWT (`accessToken` + `user`) |
+| GET | `/auth/me` | Bearer | Current user from token |
+| GET | `/api/sheet/rows` | Bearer | List operational rows (filters: `date`, `dateFrom`, `dateTo`, `ivfStatus`, `kindOfInsurance`, `q`) |
+| PATCH | `/api/sheet/row` | Bearer | Update `ivfStatus` and/or `notes` (columns E/J only — never G/H) |
+| POST | `/api/robot/run` | Bearer (**admin**) | Start Dentrix → Sheet sync (`app/robots/dentrix_scraper.py`) |
+| POST | `/api/robot/runs/{runId}/resume` | Bearer (**admin**) | Confirm Dentrix login + calendar ready |
+| GET | `/api/robot/runs/{runId}` | Bearer | Poll run status + logs |
+
+Demo users (class project only): `admin@dco.test` / `admin123`, `operator@dco.test` / `operator123`. Optional env: `AUTH_SECRET_KEY` (defaults to dev key).
 
 ### Removed (legacy Sprint 1)
 
@@ -45,6 +49,7 @@ In the repo root `.env.local`:
 VITE_API_URL=http://localhost:8000
 VITE_SHEET_USE_API=true
 VITE_DENTRIX_SYNC_USE_API=true
+VITE_AUTH_USE_API=true
 ```
 
 ### Operator test (Laura / team)
