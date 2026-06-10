@@ -68,7 +68,7 @@ def health() -> dict[str, str]:
 
 @app.post("/auth/login", response_model=LoginResponse)
 def login(body: LoginRequest) -> LoginResponse:
-    return authenticate(body.email, body.password)
+    return authenticate(body.username, body.password)
 
 
 @app.get("/auth/me", response_model=UserPublic)

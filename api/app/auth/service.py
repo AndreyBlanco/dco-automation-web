@@ -1,5 +1,4 @@
 from __future__ import annotations
-
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 import base64
@@ -16,19 +15,19 @@ UserRole = Literal["admin", "operator"]
 
 
 class LoginRequest(BaseModel):
-    email: str
+    username: str
     password: str
-
 
 class UserPublic(BaseModel):
     id: str
+    username: str
     email: str
     name: str
     role: UserRole
 
 
 class LoginResponse(BaseModel):
-    token: str
+    accessToken: str
     user: UserPublic
 
 
@@ -110,15 +109,16 @@ def verify_token(token: str) -> UserPublic:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
 
     return UserPublic(
-        id=payload["sub"],
-        email=payload["email"],
-        name=payload["name"],
-        role=payload["role"],
-    )
+    id=payload["sub"],
+    username=payload["email"],
+    email=payload["email"],
+    name=payload["name"],
+    role=payload["role"],
+)
 
 
-def authenticate(email: str, password: str) -> LoginResponse:
-    normalized_email = email.strip().lower()
+def authenticate(username: str, password: str) -> LoginResponse:
+    normalized_email = username.strip().lower()
     user = _USERS.get(normalized_email)
 
     if not user:
@@ -130,12 +130,12 @@ def authenticate(email: str, password: str) -> LoginResponse:
 
     public_user = UserPublic(
         id=user["id"],
+        username=user["email"],
         email=user["email"],
         name=user["name"],
         role=user["role"],
-    )
-    return LoginResponse(token=create_token(user), user=public_user)
-
+  )
+    return LoginResponse(accessToken=create_token(user), user=public_user)
 
 
 def get_current_user(authorization: str | None = Header(default=None, alias="Authorization")) -> UserPublic: 
