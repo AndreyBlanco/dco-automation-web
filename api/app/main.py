@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, Query
+
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import cors_origins
@@ -14,7 +15,14 @@ from .models import (
 )
 from . import sheet_gateway
 from . import robot_gateway
-
+from .auth.service import (
+    LoginRequest,
+    LoginResponse,
+    UserPublic,
+    authenticate,
+    get_current_user,
+    require_admin,
+)
 app = FastAPI(
     title="DCO Automation — IVF API Gateway",
     description=(
@@ -58,6 +66,15 @@ def health() -> dict[str, str]:
         "robot": robot_gateway.store_mode(),
     }
 
+@app.post("/auth/login", response_model=LoginResponse)
+def login(body: LoginRequest) -> LoginResponse:
+    return authenticate(body.email, body.password)
+
+
+@app.get("/auth/me", response_model=UserPublic)
+def me(user: UserPublic = Depends(get_current_user)) -> UserPublic:
+    return user
+
 
 @app.get("/api/sheet/rows", response_model=SheetRowsResponse)
 def get_sheet_rows(
@@ -67,6 +84,7 @@ def get_sheet_rows(
     ivfStatus: IvfStatus | None = Query(default=None),
     kindOfInsurance: KindOfInsurance | None = Query(default=None),
     q: str | None = Query(default=None),
+    user: UserPublic = Depends(get_current_user),
 ) -> SheetRowsResponse:
     try:
         return sheet_gateway.list_rows(
@@ -84,7 +102,12 @@ def get_sheet_rows(
 
 
 @app.patch("/api/sheet/row", response_model=SheetRowPatchResponse)
-def patch_sheet_row(body: SheetRowPatch) -> SheetRowPatchResponse:
+
+def patch_sheet_row(
+    body: SheetRowPatch,
+    user: UserPublic = Depends(get_current_user),
+) -> SheetRowPatchResponse: 
+   
     try:
         return sheet_gateway.patch_row(body)
     except KeyError as exc:
@@ -94,7 +117,12 @@ def patch_sheet_row(body: SheetRowPatch) -> SheetRowPatchResponse:
 
 
 @app.post("/api/robot/run", response_model=DentrixSyncRunSummary)
-def start_robot_run(body: DentrixSyncRunRequest) -> DentrixSyncRunSummary:
+
+def start_robot_run(
+    body: DentrixSyncRunRequest,
+    user: UserPublic = Depends(require_admin),
+) -> DentrixSyncRunSummary:
+    
     try:
         return robot_gateway.start_run(body)
     except RuntimeError as exc:
@@ -104,7 +132,11 @@ def start_robot_run(body: DentrixSyncRunRequest) -> DentrixSyncRunSummary:
 
 
 @app.post("/api/robot/runs/{run_id}/resume", response_model=DentrixSyncRunDetail)
-def resume_robot_run(run_id: str) -> DentrixSyncRunDetail:
+def resume_robot_run(
+    run_id: str,
+    user: UserPublic = Depends(require_admin),
+) -> DentrixSyncRunDetail:
+   
     try:
         return robot_gateway.resume_run(run_id)
     except FileNotFoundError as exc:
@@ -114,7 +146,12 @@ def resume_robot_run(run_id: str) -> DentrixSyncRunDetail:
 
 
 @app.get("/api/robot/runs/{run_id}", response_model=DentrixSyncRunDetail)
-def get_robot_run(run_id: str) -> DentrixSyncRunDetail:
+def get_robot_run(
+    run_id: str,
+    user: UserPublic = Depends(get_current_user),
+) -> DentrixSyncRunDetail: 
+    
+    
     try:
         return robot_gateway.get_run(run_id)
     except FileNotFoundError as exc:
