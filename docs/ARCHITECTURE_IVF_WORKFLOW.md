@@ -82,6 +82,8 @@ Optional on `SheetRow` in `GET /api/sheet/rows`:
 
 Frontend: `src/types/sheet-audit.ts`, `src/services/audit/*`, history modal on `/verification`.
 
+Laura API returns `{ entries: [{ id, createdAt, username, rowIndex, before, after }] }`; the UI maps that to per-field `events` client-side.
+
 ### Dentrix sync (UI for robot — Laura’s request)
 
 ```

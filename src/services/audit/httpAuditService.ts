@@ -4,6 +4,10 @@ import type {
   SheetAuditService,
 } from '../../types/sheet-audit'
 import { authFetch, readApiErrorMessage } from '../auth/authFetch'
+import {
+  mapLauraAuditResponse,
+  type LauraSheetAuditResponse,
+} from './auditApiMappers'
 
 export class HttpAuditService implements SheetAuditService {
   private readonly baseUrl: string
@@ -27,6 +31,7 @@ export class HttpAuditService implements SheetAuditService {
       throw new Error(await readApiErrorMessage(res, 'Failed to load audit history'))
     }
 
-    return res.json() as Promise<SheetAuditResponse>
+    const raw = (await res.json()) as LauraSheetAuditResponse
+    return { events: mapLauraAuditResponse(raw).events }
   }
 }

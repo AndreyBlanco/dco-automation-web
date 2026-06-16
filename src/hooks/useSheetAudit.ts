@@ -10,14 +10,14 @@ export function useSheetAudit(query: SheetAuditQuery, enabled = true) {
   const [events, setEvents] = useState<SheetAuditEvent[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  const queryKey = JSON.stringify(query)
+  const { rowIndex, dateFrom, dateTo } = query
 
   const load = useCallback(async () => {
     if (!enabled) return
     setLoadState('loading')
     setError(null)
     try {
-      const res = await serviceRef.current.listEvents(query)
+      const res = await serviceRef.current.listEvents({ rowIndex, dateFrom, dateTo })
       setEvents(res.events)
       setLoadState('success')
     } catch (e) {
@@ -25,7 +25,7 @@ export function useSheetAudit(query: SheetAuditQuery, enabled = true) {
       setError(e instanceof Error ? e.message : 'Could not load audit history.')
       setLoadState('error')
     }
-  }, [enabled, queryKey, query])
+  }, [enabled, rowIndex, dateFrom, dateTo])
 
   useEffect(() => {
     void load()
