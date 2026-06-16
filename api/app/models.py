@@ -91,3 +91,18 @@ class DentrixSyncRunSummary(BaseModel):
 
 class DentrixSyncRunDetail(DentrixSyncRunSummary):
     logs: list[DentrixSyncLogEntry] | None = None
+
+
+class SheetAuditEntry(BaseModel):
+    model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True)
+
+    id: int
+    created_at: str = Field(alias="createdAt")
+    username: str
+    row_index: int = Field(alias="rowIndex")
+    before: dict
+    after: dict
+
+
+class SheetAuditResponse(BaseModel):
+    entries: list[SheetAuditEntry]

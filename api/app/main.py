@@ -12,6 +12,7 @@ from .models import (
     SheetRowPatch,
     SheetRowPatchResponse,
     SheetRowsResponse,
+    SheetAuditResponse,
 )
 from . import sheet_gateway
 from . import robot_gateway
@@ -109,11 +110,29 @@ def patch_sheet_row(
 ) -> SheetRowPatchResponse: 
    
     try:
-        return sheet_gateway.patch_row(body)
+        
+        return sheet_gateway.patch_row(body, username=user.username)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+
+@app.get("/api/sheet/audit", response_model=SheetAuditResponse)
+def get_sheet_audit(
+    rowIndex: int | None = Query(default=None),
+    dateFrom: str | None = Query(default=None),
+    dateTo: str | None = Query(default=None),
+    user: UserPublic = Depends(get_current_user),
+) -> SheetAuditResponse:
+    entries = sheet_gateway.list_audit(
+        row_index=rowIndex,
+        date_from=dateFrom,
+        date_to=dateTo,
+    )
+    return SheetAuditResponse(entries=entries)
+
 
 
 @app.post("/api/robot/run", response_model=DentrixSyncRunSummary)
