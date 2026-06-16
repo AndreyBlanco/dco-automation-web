@@ -50,6 +50,40 @@ Body: { rowIndex, ivfStatus?, notes? }
 
 Enforce: no updates to columns G/H.
 
+### Sheet audit (Sprint 4 — proposed for Laura)
+
+```
+GET /api/sheet/audit?rowIndex=12&dateFrom=YYYY-MM-DD&dateTo=YYYY-MM-DD
+```
+
+Response:
+
+```json
+{
+  "events": [
+    {
+      "id": "audit-1",
+      "rowIndex": 12,
+      "field": "ivfStatus",
+      "previousValue": "New",
+      "newValue": "DONE B",
+      "username": "admin@dco.test",
+      "editedAt": "2026-05-27T18:30:00.000Z"
+    }
+  ]
+}
+```
+
+Optional on `SheetRow` in `GET /api/sheet/rows`:
+
+```json
+"lastEdit": { "username": "admin@dco.test", "editedAt": "2026-05-27T18:31:00.000Z" }
+```
+
+Frontend: `src/types/sheet-audit.ts`, `src/services/audit/*`, history modal on `/verification`.
+
+Laura API returns `{ entries: [{ id, createdAt, username, rowIndex, before, after }] }`; the UI maps that to per-field `events` client-side.
+
 ### Dentrix sync (UI for robot — Laura’s request)
 
 ```

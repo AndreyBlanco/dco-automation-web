@@ -1,4 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
+import { SheetRowHistoryPanel } from '../components/sheet/SheetRowHistoryPanel'
+import { SheetReportsPanel } from '../components/sheet/SheetReportsPanel'
 import { SheetRowEditActions } from '../components/sheet/SheetRowEditActions'
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/AsyncFeedback'
 import { Button } from '../components/ui/Button'
@@ -9,7 +11,14 @@ import { useToast } from '../context/ToastContext'
 import { sheetRowsDataSourceLabel } from '../services/sheet/createSheetRowsService'
 import { useSheetRows } from '../hooks/useSheetRows'
 import { defaultSheetDateFrom, defaultSheetDateTo } from '../utils/dateDefaults'
-import type { IvfStatusFilter, KindOfInsuranceFilter } from '../types/sheet-row'
+import { exportReportSummaryCsv, exportSheetRowsCsv } from '../utils/exportCsv'
+import { formatLogTime } from '../utils/formatLogTime'
+import { computeSheetReportSummary } from '../utils/sheetReports'
+import {
+  clearSyncCompletedNotice,
+  readSyncCompletedAt,
+} from '../utils/syncCompletionNotice'
+import type { IvfStatusFilter, KindOfInsuranceFilter, SheetRow } from '../types/sheet-row'
 import type { SheetRowsQuery } from '../types/sheet-api'
 import styles from './IvfDashboardPage.module.css'
 
@@ -32,6 +41,8 @@ export function IvfDashboardPage() {
   const [dateFrom, setDateFrom] = useState(defaultSheetDateFrom)
   const [dateTo, setDateTo] = useState(defaultSheetDateTo)
   const [query, setQuery] = useState('')
+  const [historyRow, setHistoryRow] = useState<SheetRow | null>(null)
+  const [syncNoticeAt, setSyncNoticeAt] = useState<string | null>(() => readSyncCompletedAt())
 
   const apiQuery: SheetRowsQuery = useMemo(
     () => ({
@@ -46,7 +57,10 @@ export function IvfDashboardPage() {
 
   const { rows, stats, loadState, error, reload, patchRow } = useSheetRows(apiQuery)
   const { pushToast } = useToast()
-  const canEditRows = sheetRowsDataSourceLabel() === 'API'
+  const dataSource = sheetRowsDataSourceLabel()
+  const canEditRows = dataSource === 'API' || dataSource === 'mock'
+
+  const reportSummary = useMemo(() => computeSheetReportSummary(rows), [rows])
 
   const handleSaveRow = useCallback(
     async (patch: { rowIndex: number; ivfStatus: 'New' | 'DONE B'; notes: string }) => {
@@ -66,6 +80,13 @@ export function IvfDashboardPage() {
     [patchRow, pushToast],
   )
 
+  const handleRefreshAfterSync = useCallback(() => {
+    clearSyncCompletedNotice()
+    setSyncNoticeAt(null)
+    void reload()
+    pushToast('Dashboard refreshed.', 'success')
+  }, [reload, pushToast])
+
   const metricsLoading = loadState === 'loading' || loadState === 'idle'
 
   return (
@@ -79,6 +100,30 @@ export function IvfDashboardPage() {
           Columns G/H are never written by the app.
         </p>
       </header>
+
+      {syncNoticeAt && (
+        <div className={styles.syncBanner} role="status">
+          <p>
+            Dentrix sync completed at <strong>{formatLogTime(syncNoticeAt)}</strong>.
+            Refresh to load the latest sheet rows.
+          </p>
+          <div className={styles.syncBannerActions}>
+            <Button variant="primary" size="sm" onClick={handleRefreshAfterSync}>
+              Refresh now
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                clearSyncCompletedNotice()
+                setSyncNoticeAt(null)
+              }}
+            >
+              Dismiss
+            </Button>
+          </div>
+        </div>
+      )}
 
       <div className={styles.metrics}>
         <Card>
@@ -204,7 +249,8 @@ export function IvfDashboardPage() {
                   <th className={styles.th}>Age</th>
                   <th className={styles.th}>Insurance</th>
                   <th className={styles.th}>Notes</th>
-                  <th className={styles.th}>Edit</th>
+                  <th className={styles.th}>Last edit</th>
+                  <th className={styles.th}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -233,12 +279,36 @@ export function IvfDashboardPage() {
                         {row.notes || '—'}
                       </div>
                     </td>
-                    <td className={`${styles.td} ${styles.tdEdit}`}>
-                      <SheetRowEditActions
-                        row={row}
-                        canEdit={canEditRows}
-                        onSave={handleSaveRow}
-                      />
+                    <td className={styles.td}>
+                      {row.lastEdit ? (
+                        <div className={styles.lastEditCell}>
+                          <span>{row.lastEdit.username}</span>
+                          <span className={styles.lastEditTime}>
+                            {formatLogTime(row.lastEdit.editedAt)}
+                          </span>
+                        </div>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className={`${styles.td} ${styles.tdActions}`}>
+                      <div className={styles.actionRow}>
+                        <SheetRowEditActions
+                          row={row}
+                          canEdit={canEditRows}
+                          onSave={handleSaveRow}
+                        />
+                        {row.rowIndex != null && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setHistoryRow(row)}
+                          >
+                            History
+                          </Button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -246,7 +316,21 @@ export function IvfDashboardPage() {
             </table>
           </div>
         )}
+
+        <SheetReportsPanel
+          summary={reportSummary}
+          loading={metricsLoading}
+          rowsAvailable={rows.length > 0}
+          onExportRows={() => exportSheetRowsCsv(rows)}
+          onExportSummary={() =>
+            exportReportSummaryCsv(reportSummary, dateFrom, dateTo)
+          }
+        />
       </Card>
+
+      {historyRow && (
+        <SheetRowHistoryPanel row={historyRow} onClose={() => setHistoryRow(null)} />
+      )}
     </div>
   )
 }

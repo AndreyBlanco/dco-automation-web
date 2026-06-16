@@ -123,8 +123,49 @@
   min-width: 960px;
 }
 
-.tdEdit {
-  min-width: 220px;
+.tdActions {
+  min-width: 200px;
+}
+
+.actionRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: flex-start;
+}
+
+.lastEditCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8rem;
+}
+
+.lastEditTime {
+  color: var(--color-text-muted);
+}
+
+.syncBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--radius-md);
+  background: rgba(76, 175, 80, 0.12);
+  border: 1px solid rgba(76, 175, 80, 0.35);
+}
+
+.syncBanner p {
+  margin: 0;
+  font-size: var(--font-size-small);
+}
+
+.syncBannerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
 }
 
 .th {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { EmptyState, ErrorState, LoadingState } from '../components/ui/AsyncFeedback'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
@@ -8,6 +8,7 @@ import { useDentrixSync } from '../hooks/useDentrixSync'
 import type { DentrixSyncRunStatus } from '../types/dentrix-sync-api'
 import { defaultSyncStartDate } from '../utils/dateDefaults'
 import { formatLogTime } from '../utils/formatLogTime'
+import { markSyncCompleted } from '../utils/syncCompletionNotice'
 import styles from './DentrixSyncPage.module.css'
 
 const INSTRUCTIONS = [
@@ -15,7 +16,7 @@ const INSTRUCTIONS = [
   'A Chromium window opens on that PC. Log in to Dentrix Ascend if needed.',
   'Position the calendar on the first clinic day, then press “Dentrix is ready” below.',
   'The robot writes to your Google Sheet (columns A/C/D/E/F/I/J only — never G/H). Medicaid is skipped.',
-  'When status is Completed, go to IVF Verification (sidebar or tab bar) and refresh to see updates.',
+  'When status is Completed, open IVF Verification — a refresh banner appears with the latest sheet rows.',
 ]
 
 function statusPillClass(status: DentrixSyncRunStatus | 'idle'): string {
@@ -58,6 +59,15 @@ export function DentrixSyncPage() {
     if (!run?.logs?.length) return []
     return [...run.logs].reverse()
   }, [run?.logs])
+
+  const lastNotifiedRunId = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (run?.status === 'completed' && run.runId && lastNotifiedRunId.current !== run.runId) {
+      lastNotifiedRunId.current = run.runId
+      markSyncCompleted()
+    }
+  }, [run?.runId, run?.status])
 
   function handleStart() {
     const n = Number.parseInt(days, 10)
