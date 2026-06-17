@@ -1,2 +1,155 @@
 Testing github control Laura 
-testing 2.0  gihub contorl laura
+testing 2.0  gihub contorl lauraAquí tienes una distribución lista para la **hoja de trabajo**, el **video (5–8 min)** y la **rúbrica de maestría**, alineada con lo que realmente entregaron (no con el project-description original al 100%).
+
+---
+
+## 1. Lista de requisitos del proyecto (para worksheet + slide del video)
+
+Usa esta lista en la hoja y en el video. Cada ítem debe mostrarse en vivo o con mock/API demo.
+
+| ID | Requisito | Quién lo implementó | Demostración en video |
+|----|-----------|-------------------|------------------------|
+| **R1** | **Login seguro** con usuarios autorizados | Laura (API) + Andrey (UI) | Login admin vs operator |
+| **R2** | **Roles y permisos** (admin: sync; operator: solo dashboard) | Laura (API 403) + Andrey (UI oculta Sync) | Mismo login, dos roles |
+| **R3** | **Google Sheet como BD operativa** (lectura/escritura vía API) | Laura | `GET /api/sheet/rows`, `PATCH` |
+| **R4** | **Integración Dentrix** (Playwright, human-in-the-loop) | Laura | Sync desde UI o clip del robot |
+| **R5** | **Verificación IVF 2026** → estados `New` / `DONE B` | Laura (robot) + Andrey (dashboard) | Fila con cada estado en tabla |
+| **R6** | **Clasificación de seguro** (PPO / Medicaid / No info + carrier) | Laura (robot/sheet) + Andrey (filtros) | Filtros y columnas en dashboard |
+| **R7** | **Reglas de negocio**: skip Medicaid, columnas G/H protegidas | Laura | Comentar en robot + PATCH solo E/J |
+| **R8** | **Dashboard operativo** (filtros, KPIs, búsqueda, edición E/J) | Andrey | `/verification` completo |
+| **R9** | **Panel Dentrix Sync** (start, poll, logs, “Dentrix is ready”) | Andrey (UI) + Laura (API/robot) | `/sync` |
+| **R10** | **Reportes de productividad** (New vs DONE B, por tipo/carrier) | Andrey | Productivity summary |
+| **R11** | **Exportación CSV** (filas + resumen) | Andrey | Botones export |
+| **R12** | **Auditoría de cambios** (historial por fila, última edición) | Andrey (UI); Laura (backend si existe) | History + Last edit |
+| **R13** | **API gateway FastAPI** + documentación reproducible | Laura + Andrey | README + `OPERATOR_RUNBOOK` |
+
+### Mejora adicional (maestría — al menos una)
+
+Marca **2–3** en la worksheet como “Enhancement”:
+
+| Mejora | Descripción |
+|--------|-------------|
+| **E1** | Arquitectura **Sheets-first** (pivot desde desktop/SQLite del proposal original) |
+| **E2** | **Sesión JWT** con restore (`GET /auth/me`) y logout automático en 401 |
+| **E3** | **Post-sync UX**: banner de refresh en dashboard tras sync completado |
+| **E4** | **Runbook operador** para terceros sin mocks |
+
+---
+
+## 2. Distribución del video (≈ 6–7 minutos)
+
+### Bloque 0 — Intro conjunta (~45 s) — **Ambos (cara visible)**
+
+- Nombre del proyecto: **DCO Automation System**
+- Equipo: Laura (lead / backend) + Andrey (UI/UX/docs)
+- Arquitectura en una frase: **Dentrix → Google Sheet → React dashboard**
+- Mostrar slide con la tabla de requisitos R1–R13
+
+---
+
+### Bloque 1 — Laura (~3 min) — **Cara + nombre en pantalla**
+
+| Tiempo | Contenido | Requisitos cubiertos |
+|--------|-----------|----------------------|
+| 0:00–0:45 | **Demo producto**: flujo Dentrix Sync (start → awaiting login → completed) + logs | R4, R9, R7 |
+| 0:45–1:30 | Sheet en vivo o API: filas `New`/`DONE B`, Medicaid skip, columnas | R3, R5, R6, R7 |
+| 1:30–2:15 | Login API + roles (admin sync vs operator 403) | R1, R2 |
+| 2:15–3:00 | **Código**: `api/app/main.py`, `auth/service.py`, `dentrix_scraper` / robot, `sheet_gateway` | R13 |
+
+**Archivos clave para Laura en el tutorial de código:**
+
+- `api/app/auth/service.py` — JWT, usuarios demo
+- `api/app/main.py` — rutas protegidas
+- `api/app/robots/dentrix_scraper.py` (o módulo robot) — IVF 2026, skip Medicaid
+- Gateway Sheet — lectura/escritura segura
+
+---
+
+### Bloque 2 — Andrey (~3 min) — **Cara + nombre en pantalla**
+
+| Tiempo | Contenido | Requisitos cubiertos |
+|--------|-----------|----------------------|
+| 0:00–1:00 | **Demo producto**: login → dashboard (filtros, KPIs, editar fila) | R8, R5, R6 |
+| 1:00–1:45 | Operator vs admin (sin Sync); reportes + export CSV; History | R2, R10, R11 |
+| 1:45–2:15 | Banner post-sync + refresh | E3 |
+| 2:15–3:00 | **Código**: `AuthContext`, `IvfDashboardPage`, servicios `create*Service`, audit/reports utils | R1, R8, R12, R13 |
+
+**Archivos clave para Andrey:**
+
+- `src/context/AuthContext.tsx` — sesión y 401
+- `src/pages/IvfDashboardPage.tsx` — dashboard + reports
+- `src/services/auth/`, `src/services/sheet/` — patrón mock/API
+- `src/components/sheet/SheetRowHistoryPanel.tsx`
+- `docs/OPERATOR_RUNBOOK.md`
+
+---
+
+### Bloque 3 — Cierre conjunto (~30–45 s) — **Ambos**
+
+- Repo GitHub + README
+- Limitaciones honestas: sin portal Delta Dental, sin PHI real en repo, audit API completo si Laura no lo mergeó
+- Mejoras futuras (1 línea cada una)
+
+---
+
+## 3. División por “features” del project-description (Laura original)
+
+| Feature del proposal | Entregado | Presenta |
+|----------------------|-----------|----------|
+| Secure login | ✅ Web + API | Laura (API) + Andrey (UI) |
+| Desktop dashboard / workflows | ✅ Web dashboard IVF | Andrey |
+| Dentrix import/process | ✅ Robot + sync | Laura |
+| Insurance classification/tracking | ✅ Sheet + UI | Ambos |
+| Excel/report generation | ✅ CSV export + summary | Andrey |
+| Manual editing | ✅ PATCH E/J | Andrey demo, Laura API |
+| Database storage | ✅ **Google Sheet** (no SQLite principal) | Laura |
+| Delta Dental portal | ❌ Futuro | Mencionar 10 s, no demo |
+| Task management | ❌ Fuera de alcance | No incluir como requisito cumplido |
+| AI optional | ❌ | No incluir |
+| Documentation | ✅ README + runbook | Andrey |
+
+---
+
+## 4. Texto para pegar en la worksheet (inglés, típico del curso)
+
+**Project name:** DCO Automation System  
+
+**Team members:** Laura Paola Nuñez Cala (Project Lead — backend, Dentrix robot, Google Sheets API), Andrey Gregorio Blanco Alfaro (UI/UX, React dashboard, documentation)  
+
+**GitHub repository:** `https://github.com/AndreyBlanco/dco-automation-web`  
+
+**Demo accounts (no real PHI):**  
+- Admin: `admin@dco.test` / `admin123`  
+- Operator: `operator@dco.test` / `operator123`  
+- Mock mode (no API): `admin`/`admin`, `operator`/`operator`  
+
+**Video URL:** *(pegar cuando subas a YouTube/Drive)*  
+
+**Project requirements implemented:** R1–R13 (see list above)  
+
+**Enhancement(s) beyond baseline:** Sheets-first architecture; role-based access; CSV productivity reports; operator runbook; post-sync dashboard refresh  
+
+---
+
+## 5. Checklist rúbrica (evitar 0)
+
+| Elemento obligatorio | Cómo cumplirlo |
+|---------------------|----------------|
+| Presentación de **cada miembro** | Laura bloque 1, Andrey bloque 2, intro/cierre ambos |
+| **Rostro y nombre** de cada uno | Intro + cierre + cada bloque con webcam o foto+nombre en slide |
+| **Demostración** de requisitos | Tabla R1–R13, cada uno muestra sus IDs |
+| **Análisis de código** importante | Laura: API/robot; Andrey: React/services |
+| Worksheet **completa** | URLs, cuentas demo, nombres |
+| Video **5–8 min** | ~6:30 con la distribución propuesta |
+
+---
+
+## 6. Resumen en una línea
+
+- **Laura:** backend, robot, Sheet, auth, demo sync + código Python.  
+- **Andrey:** UI completa, roles, reportes, audit UI, docs + código React.  
+- **Ambos:** intro, lista de requisitos, cierre, caras visibles.
+
+Si quieres, el siguiente paso puede ser un **guión palabra por palabra** (60 s Laura + 60 s Andrey para intro/cierre) o el texto exacto para cada campo del `document.xml` de la worksheet si me pegas las preguntas del docx.
+
+[REDACTED]

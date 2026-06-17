@@ -14,9 +14,7 @@
 | Dentrix Sync | `/sync` | Start and poll Dentrix → Sheet robot runs |
 | Login | `/login` | Mock or API auth; roles **admin** / **operator** |
 
-**Not included anymore:** Sprint 1 insurer-portal demo (`verified` / `denied`, Excel catalog, `/patients`, appointments, reports).
-
-See `docs/ARCHITECTURE_IVF_WORKFLOW.md`, `docs/OPERATOR_RUNBOOK.md`, and `api/README.md`.
+See  `docs/OPERATOR_RUNBOOK.md`, and `api/README.md`.
 
 ## Scripts
 
