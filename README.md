@@ -1,5 +1,9 @@
 "I have no special talent, I am only passionately curious". Albert Einstein
 
+<img width="695" height="416" alt="スクリーンショット 2026-07-22 161553" src="https://github.com/user-attachments/assets/4e4f9010-314a-4d8a-b10d-07a9c0594cfd" />
+
+
+
 # DCO Automation System — Web UI
 
 **React + TypeScript + Vite** front end and **FastAPI** gateway for Laura’s operational IVF workflow: **Dentrix Ascend → Google Sheet → dashboard** with statuses **New** / **DONE B** (IVF 2026 document in Dentrix, not insurer portals).
